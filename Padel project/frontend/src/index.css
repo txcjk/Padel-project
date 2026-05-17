@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/* ============================================
+   PADEL ARENA — Design System (Esport Dark)
+   ============================================ */
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+
+  /* Padel brand colors */
+  --color-neon-lime: #a3e635;
+  --color-neon-lime-dim: #65a30d;
+  --color-neon-violet: #a855f7;
+  --color-neon-violet-dim: #7c3aed;
+  --color-neon-violet-deep: #6d28d9;
+  --color-surface-900: #18181b;
+  --color-surface-800: #27272a;
+  --color-surface-700: #3f3f46;
+  --color-border: #3f3f4620;
+
+  /* Elo Tier Colors */
+  --color-tier-bronze: #cd7f32;
+  --color-tier-silver: #c0c0c0;
+  --color-tier-gold: #ffd700;
+  --color-tier-platinum: #00ced1;
+  --color-tier-diamond: #b026ff;
+}
+
+/* Glow utilities */
+@layer utilities {
+  .glow-lime {
+    box-shadow: 0 0 20px #a3e63530, 0 0 60px #a3e63515;
+  }
+  .glow-violet {
+    box-shadow: 0 0 20px #a855f730, 0 0 60px #a855f715;
+  }
+  .glow-lime-strong {
+    box-shadow: 0 0 15px #a3e63550, 0 0 40px #a3e63525, 0 0 80px #a3e63510;
+  }
+  .glow-violet-strong {
+    box-shadow: 0 0 15px #a855f750, 0 0 40px #a855f725, 0 0 80px #a855f710;
+  }
+  .text-glow-lime {
+    text-shadow: 0 0 12px #a3e63560, 0 0 30px #a3e63530;
+  }
+  .text-glow-violet {
+    text-shadow: 0 0 12px #a855f760, 0 0 30px #a855f730;
+  }
+  
+  /* Elo Tier Glows */
+  .glow-bronze { box-shadow: 0 0 15px #cd7f3240, 0 0 40px #cd7f3215; }
+  .text-glow-bronze { text-shadow: 0 0 10px #cd7f3260, 0 0 20px #cd7f3230; }
+
+  .glow-silver { box-shadow: 0 0 15px #c0c0c040, 0 0 40px #c0c0c015; }
+  .text-glow-silver { text-shadow: 0 0 10px #c0c0c060, 0 0 20px #c0c0c030; }
+
+  .glow-gold { box-shadow: 0 0 20px #ffd70040, 0 0 60px #ffd70015; }
+  .text-glow-gold { text-shadow: 0 0 12px #ffd70060, 0 0 30px #ffd70030; }
+
+  .glow-platinum { box-shadow: 0 0 20px #00ced140, 0 0 60px #00ced115; }
+  .text-glow-platinum { text-shadow: 0 0 12px #00ced160, 0 0 30px #00ced130; }
+
+  .glow-diamond { box-shadow: 0 0 25px #b026ff50, 0 0 70px #b026ff20; }
+  .text-glow-diamond { text-shadow: 0 0 15px #b026ff70, 0 0 40px #b026ff40; }
+}
+
+/* Pulsation animation for LAST alerts */
+@keyframes pulse-violet {
+  0%, 100% { box-shadow: 0 0 15px #a855f740, 0 0 40px #a855f720; }
+  50% { box-shadow: 0 0 25px #a855f770, 0 0 60px #a855f735; }
+}
+@keyframes pulse-button {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 10px #a855f750; }
+  50% { transform: scale(1.04); box-shadow: 0 0 25px #a855f780, 0 0 50px #a855f740; }
+}
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-pulse-violet {
+  animation: pulse-violet 2s ease-in-out infinite;
+}
+.animate-pulse-button {
+  animation: pulse-button 1.6s ease-in-out infinite;
+}
+.animate-slide-in {
+  animation: slide-in-up 0.5s ease-out both;
+}
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out both;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+/* Star rating interaction */
+.star-btn { transition: transform 0.15s ease, color 0.15s ease; }
+.star-btn:hover { transform: scale(1.25); }
