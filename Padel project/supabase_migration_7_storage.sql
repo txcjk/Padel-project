@@ -8,7 +8,7 @@ VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- 2. Activation de la sécurité RLS sur storage.objects (déjà actif par défaut dans Supabase)
-ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- 3. Suppression des anciennes politiques si existantes pour éviter les doublons
 DROP POLICY IF EXISTS "Public Access to Avatars" ON storage.objects;
