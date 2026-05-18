@@ -12,6 +12,7 @@ import GLHFNudgeModal from './components/GLHFNudgeModal.jsx'
 import ScoreApprovalBanner from './components/ScoreApprovalBanner.jsx'
 import PlayerProfileModal from './components/PlayerProfileModal.jsx'
 import CGU from './components/CGU.jsx'
+import PremiumSubscription from './components/PremiumSubscription.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -151,6 +152,7 @@ export default function App() {
   const [activeScoreMatch, setActiveScoreMatch] = useState(null)
   const [selectedPlayer, setSelectedPlayer] = useState(null)
   const [showCGU, setShowCGU] = useState(false)
+  const [showPremium, setShowPremium] = useState(false)
 
   // Listen to Auth changes
   useEffect(() => {
@@ -735,7 +737,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <DashboardHeader user={userProfile} onLogout={handleLogout} />
+      <DashboardHeader user={userProfile} onLogout={handleLogout} onUpgradeClick={() => setShowPremium(true)} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         
@@ -813,6 +815,12 @@ export default function App() {
 
       {showCGU && (
         <CGU onClose={() => setShowCGU(false)} />
+      )}
+
+      {showPremium && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/95 backdrop-blur-md animate-fade-in">
+          <PremiumSubscription onClose={() => setShowPremium(false)} />
+        </div>
       )}
     </div>
   )

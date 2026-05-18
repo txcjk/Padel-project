@@ -1,4 +1,4 @@
-import { Trophy, Zap, LogOut, Bell, Menu, X } from 'lucide-react'
+import { Trophy, Zap, LogOut, Bell, Menu, X, Crown } from 'lucide-react'
 import { useState } from 'react'
 
 function EloRankBadge({ elo, rank }) {
@@ -41,7 +41,7 @@ function UserAvatar({ firstName, lastName }) {
   )
 }
 
-export default function DashboardHeader({ user, onLogout }) {
+export default function DashboardHeader({ user, onLogout, onUpgradeClick }) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
@@ -66,6 +66,15 @@ export default function DashboardHeader({ user, onLogout }) {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-5">
+            {/* Upgrade CTA */}
+            <button 
+              onClick={onUpgradeClick}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-neon-violet-deep to-neon-violet hover:from-neon-violet hover:to-neon-violet-deep border border-neon-violet/30 hover:border-neon-violet/50 text-white font-bold text-xs uppercase tracking-wider glow-violet cursor-pointer transition-all duration-300 hover:scale-105"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              <span>Devenir Élite</span>
+            </button>
+
             <EloRankBadge elo={user.elo} rank={user.rank} />
 
             {/* Notifications */}
@@ -106,14 +115,23 @@ export default function DashboardHeader({ user, onLogout }) {
 
         {/* Mobile dropdown */}
         {mobileOpen && (
-          <div className="md:hidden pb-4 pt-2 border-t border-zinc-800/40 animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
+          <div className="md:hidden pb-4 pt-2 border-t border-zinc-800/40 animate-fade-in space-y-4">
+            <div className="flex items-center gap-3">
               <UserAvatar firstName={user.firstName} lastName={user.lastName} />
               <div>
                 <p className="font-semibold text-zinc-200 text-sm">{user.firstName} {user.lastName}</p>
                 <p className="text-xs text-zinc-500">{user.city}</p>
               </div>
             </div>
+
+            <button 
+              onClick={() => { setMobileOpen(false); onUpgradeClick(); }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neon-violet text-white font-black text-xs uppercase tracking-widest glow-violet cursor-pointer"
+            >
+              <Crown className="w-4 h-4" />
+              <span>Devenir Élite</span>
+            </button>
+
             <EloRankBadge elo={user.elo} rank={user.rank} />
           </div>
         )}
