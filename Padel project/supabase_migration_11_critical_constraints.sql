@@ -85,10 +85,9 @@ WHERE a.id > b.id
   AND a.reviewer_id = b.reviewer_id
   AND a.match_id = b.match_id;
 
--- Ajouter la contrainte unique
-ALTER TABLE reviews
-  ADD CONSTRAINT unique_review_per_match
-  UNIQUE (reviewer_id, match_id);
+-- Ajouter la contrainte unique (avec suppression préalable pour idempotence)
+ALTER TABLE reviews DROP CONSTRAINT IF EXISTS unique_review_per_match;
+ALTER TABLE reviews ADD CONSTRAINT unique_review_per_match UNIQUE (reviewer_id, match_id);
 
 -- ============================================================
 -- FIN DE LA MIGRATION
