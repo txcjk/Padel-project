@@ -14,6 +14,7 @@ import PlayerProfileModal from './components/PlayerProfileModal.jsx'
 import CGU from './components/CGU.jsx'
 import PremiumSubscription from './components/PremiumSubscription.jsx'
 import OnboardingForm from './components/OnboardingForm.jsx'
+import EditProfileModal from './components/EditProfileModal.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -154,6 +155,7 @@ export default function App() {
   const [selectedPlayer, setSelectedPlayer] = useState(null)
   const [showCGU, setShowCGU] = useState(false)
   const [showPremium, setShowPremium] = useState(false)
+  const [showEditProfile, setShowEditProfile] = useState(false)
 
   // Listen to Auth changes
   useEffect(() => {
@@ -229,7 +231,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count')
+        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count')
         .eq('id', userId)
         .single()
 
@@ -241,6 +243,7 @@ export default function App() {
           firstName: data.first_name,
           lastName: data.last_name,
           city: data.city || 'Bordeaux',
+          country: data.country || 'France',
           region: data.region || 'Nouvelle-Aquitaine',
           club: data.club || 'Padel Arena',
           hand: data.hand || 'Droitier',
@@ -755,7 +758,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
-      <DashboardHeader user={userProfile} onLogout={handleLogout} onUpgradeClick={() => setShowPremium(true)} />
+      <DashboardHeader 
+        user={userProfile} 
+        onLogout={handleLogout} 
+        onUpgradeClick={() => setShowPremium(true)} 
+        onProfileClick={() => setShowEditProfile(true)} 
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         
@@ -848,6 +856,19 @@ export default function App() {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/95 backdrop-blur-md animate-fade-in">
           <PremiumSubscription onClose={() => setShowPremium(false)} />
         </div>
+      )}
+
+      {showEditProfile && (
+        <EditProfileModal 
+          user={userProfile} 
+          onClose={() => setShowEditProfile(false)} 
+          onSave={(updatedProfile) => {
+            setUserProfile(prev => ({
+              ...prev,
+              ...updatedProfile
+            }));
+          }} 
+        />
       )}
     </div>
   )

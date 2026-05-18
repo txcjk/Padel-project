@@ -28,20 +28,28 @@ function EloRankBadge({ elo, rank }) {
   )
 }
 
-function UserAvatar({ firstName, lastName }) {
-  const initials = `${firstName[0]}${lastName[0]}`
+function UserAvatar({ firstName, lastName, avatar }) {
+  const initials = (firstName && lastName) ? `${firstName[0]}${lastName[0]}` : 'JD'
   return (
     <div className="relative">
-      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-neon-lime/30 to-neon-violet/30 flex items-center justify-center border border-zinc-700/50 text-sm font-bold text-zinc-200 font-display">
-        {initials}
-      </div>
+      {avatar ? (
+        <img 
+          src={avatar} 
+          alt={`${firstName} ${lastName}`} 
+          className="w-11 h-11 rounded-full object-cover border border-zinc-700/50"
+        />
+      ) : (
+        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-neon-lime/30 to-neon-violet/30 flex items-center justify-center border border-zinc-700/50 text-sm font-bold text-zinc-200 font-display">
+          {initials}
+        </div>
+      )}
       {/* Online dot */}
       <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-zinc-950" />
     </div>
   )
 }
 
-export default function DashboardHeader({ user, onLogout, onUpgradeClick }) {
+export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProfileClick }) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
@@ -84,15 +92,18 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick }) {
             </button>
 
             {/* Profile */}
-            <div className="flex items-center gap-3 pl-3 border-l border-zinc-800/60">
-              <UserAvatar firstName={user.firstName} lastName={user.lastName} />
+            <button 
+              onClick={onProfileClick}
+              className="flex items-center gap-3 pl-3 border-l border-zinc-800/60 hover:opacity-80 transition-opacity text-left focus:outline-none cursor-pointer"
+            >
+              <UserAvatar firstName={user.firstName} lastName={user.lastName} avatar={user.avatar} />
               <div className="hidden lg:flex flex-col">
                 <span className="text-sm font-semibold text-zinc-200 leading-tight">
-                  {user.firstName} {user.lastName[0]}.
+                  {user.firstName} {user.lastName ? user.lastName[0] + '.' : ''}
                 </span>
                 <span className="text-xs text-zinc-500">{user.city}</span>
               </div>
-            </div>
+            </button>
 
             <button 
               onClick={onLogout}
@@ -116,13 +127,16 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick }) {
         {/* Mobile dropdown */}
         {mobileOpen && (
           <div className="md:hidden pb-4 pt-2 border-t border-zinc-800/40 animate-fade-in space-y-4">
-            <div className="flex items-center gap-3">
-              <UserAvatar firstName={user.firstName} lastName={user.lastName} />
+            <button 
+              onClick={() => { setMobileOpen(false); onProfileClick(); }}
+              className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity focus:outline-none cursor-pointer"
+            >
+              <UserAvatar firstName={user.firstName} lastName={user.lastName} avatar={user.avatar} />
               <div>
                 <p className="font-semibold text-zinc-200 text-sm">{user.firstName} {user.lastName}</p>
                 <p className="text-xs text-zinc-500">{user.city}</p>
               </div>
-            </div>
+            </button>
 
             <button 
               onClick={() => { setMobileOpen(false); onUpgradeClick(); }}

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import PlayerCard from './PlayerCard';
-import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, User, Camera, Loader2 } from 'lucide-react';
+import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, User, Camera, Loader2, Globe } from 'lucide-react';
 
 export default function OnboardingForm({ user, onComplete }) {
   const [firstName, setFirstName] = useState('');
@@ -11,6 +11,7 @@ export default function OnboardingForm({ user, onComplete }) {
   const [dominantHand, setDominantHand] = useState('Droitier');
   const [playStyle, setPlayStyle] = useState('Stratège');
   const [mainClub, setMainClub] = useState('');
+  const [country, setCountry] = useState('France');
   
   // Avatar states
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
@@ -84,6 +85,7 @@ export default function OnboardingForm({ user, onComplete }) {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           city: city.trim(),
+          country: country.trim(),
           max_radius_km: parseInt(travelRadius),
           hand: dominantHand,
           play_style: playStyle,
@@ -103,6 +105,7 @@ export default function OnboardingForm({ user, onComplete }) {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         city: city.trim(),
+        country: country.trim(),
         club: mainClub.trim(),
         hand: dominantHand,
         playStyle: playStyle,
@@ -130,6 +133,7 @@ export default function OnboardingForm({ user, onComplete }) {
     hand: dominantHand,
     avatar: avatarPreview || avatarUrl || null,
     club: mainClub.trim() || 'Mon Club Principal',
+    country: country.trim(),
     globalRank: 12,
     fairPlay: 100,
     punctuality: 100,
@@ -285,20 +289,36 @@ export default function OnboardingForm({ user, onComplete }) {
                 </div>
               </div>
 
-              {/* Club principal */}
+              {/* Pays */}
               <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">Club principal</label>
+                <label className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">Pays</label>
                 <div className="relative">
-                  <Compass className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600" />
+                  <Globe className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600" />
                   <input
                     type="text"
-                    value={mainClub}
-                    onChange={(e) => setMainClub(e.target.value)}
-                    placeholder="ex: 4Padels Bordeaux"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    placeholder="ex: France"
                     className="w-full bg-zinc-950/60 border border-zinc-800/80 focus:border-neon-lime/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none transition-all"
                     required
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Club de Padel principal */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold">Club de Padel principal</label>
+              <div className="relative">
+                <Compass className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600" />
+                <input
+                  type="text"
+                  value={mainClub}
+                  onChange={(e) => setMainClub(e.target.value)}
+                  placeholder="ex: 4Padels Bordeaux"
+                  className="w-full bg-zinc-950/60 border border-zinc-800/80 focus:border-neon-lime/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none transition-all"
+                  required
+                />
               </div>
             </div>
 
