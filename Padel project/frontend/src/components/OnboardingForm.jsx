@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import PlayerCard from './PlayerCard';
 import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, User, Camera, Loader2, Globe } from 'lucide-react';
@@ -12,6 +12,23 @@ export default function OnboardingForm({ user, onComplete }) {
   const [playStyle, setPlayStyle] = useState('Stratège');
   const [mainClub, setMainClub] = useState('');
   const [country, setCountry] = useState('France');
+  const [playerTag, setPlayerTag] = useState(user?.playerTag || '');
+
+  // Stable generate user playerTag when first name changes
+  useEffect(() => {
+    if (user?.playerTag) {
+      setPlayerTag(user.playerTag);
+      return;
+    }
+    if (firstName.trim()) {
+      if (!playerTag || !playerTag.startsWith(firstName.trim())) {
+        const rand = Math.floor(Math.random() * 9000) + 1000;
+        setPlayerTag(`${firstName.trim()}#${rand}`);
+      }
+    } else {
+      setPlayerTag('');
+    }
+  }, [firstName, user?.playerTag]);
   
   // Avatar states
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
@@ -91,6 +108,7 @@ export default function OnboardingForm({ user, onComplete }) {
           play_style: playStyle,
           club: mainClub.trim(),
           avatar_url: avatarUrl,
+          player_tag: playerTag,
           elo_rating: 1000,
           fair_play_score: 100,
           punctuality_rate: 100,
@@ -110,6 +128,7 @@ export default function OnboardingForm({ user, onComplete }) {
         hand: dominantHand,
         playStyle: playStyle,
         avatar: avatarUrl,
+        playerTag: playerTag,
         elo: 1000,
         rank: { label: 'Bronze', color: 'bronze' },
         fairPlay: 100,
@@ -134,6 +153,7 @@ export default function OnboardingForm({ user, onComplete }) {
     avatar: avatarPreview || avatarUrl || null,
     club: mainClub.trim() || 'Mon Club Principal',
     country: country.trim(),
+    playerTag: playerTag,
     globalRank: 12,
     fairPlay: 100,
     punctuality: 100,
@@ -171,6 +191,16 @@ export default function OnboardingForm({ user, onComplete }) {
             {error && (
               <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold leading-relaxed animate-fade-in">
                 {error}
+              </div>
+            )}
+
+            {playerTag && (
+              <div className="p-4 rounded-2xl bg-neon-lime/5 border border-neon-lime/20 text-neon-lime text-xs font-semibold leading-relaxed animate-fade-in flex flex-col items-center text-center gap-1.5 shadow-[0_0_20px_rgba(204,255,0,0.05)]">
+                <span className="text-[10px] uppercase font-black tracking-widest text-zinc-500">ID Joueur Unique</span>
+                <span className="text-xl font-black font-display text-white tracking-wide">{playerTag}</span>
+                <p className="text-[10px] text-zinc-400 font-medium">
+                  Voici votre ID unique elomatch. Partagez-le avec vos partenaires pour qu'ils vous trouvent instantanément.
+                </p>
               </div>
             )}
 

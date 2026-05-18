@@ -101,7 +101,12 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
                 <span className="text-sm font-semibold text-zinc-200 leading-tight">
                   {user.firstName} {user.lastName ? user.lastName[0] + '.' : ''}
                 </span>
-                <span className="text-xs text-zinc-500">{user.city}</span>
+                {user.playerTag && (
+                  <span className="text-[10px] font-bold text-zinc-400 tracking-wide font-mono mt-0.5 leading-none">
+                    {user.playerTag}
+                  </span>
+                )}
+                <span className="text-[10px] text-zinc-500 font-medium mt-0.5 leading-none">{user.city}</span>
               </div>
             </button>
 
@@ -133,8 +138,15 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
             >
               <UserAvatar firstName={user.firstName} lastName={user.lastName} avatar={user.avatar} />
               <div>
-                <p className="font-semibold text-zinc-200 text-sm">{user.firstName} {user.lastName}</p>
-                <p className="text-xs text-zinc-500">{user.city}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-zinc-200 text-sm">{user.firstName} {user.lastName}</p>
+                  {user.playerTag && (
+                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded font-mono">
+                      {user.playerTag}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-zinc-500 mt-0.5">{user.city}</p>
               </div>
             </button>
 

@@ -231,7 +231,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count')
+        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag')
         .eq('id', userId)
         .single()
 
@@ -249,6 +249,7 @@ export default function App() {
           hand: data.hand || 'Droitier',
           playStyle: data.play_style || 'Stratège',
           avatar: data.avatar_url || null,
+          playerTag: data.player_tag || '',
           elo: data.elo_rating ?? 1000,
           rank: getRankFromElo(data.elo_rating ?? 1000),
           fairPlay: data.fair_play_score ?? 100,

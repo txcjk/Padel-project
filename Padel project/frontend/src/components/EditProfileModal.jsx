@@ -104,7 +104,8 @@ export default function EditProfileModal({ user, onClose, onSave }) {
         club: mainClub.trim(),
         hand: dominantHand,
         playStyle: playStyle,
-        avatar: avatarUrl
+        avatar: avatarUrl,
+        playerTag: user.playerTag
       });
       onClose();
     } catch (err) {
@@ -124,6 +125,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
     hand: dominantHand,
     avatar: avatarPreview || avatarUrl || null,
     club: mainClub.trim() || 'Mon Club Principal',
+    playerTag: user.playerTag || '',
     globalRank: user.globalRank || 12,
     fairPlay: user.fairPlay || 100,
     punctuality: user.punctuality || 100,
@@ -163,9 +165,16 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           
           <div>
             <div className="space-y-1 mb-5">
-              <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-neon-violet/10 text-neon-violet border border-neon-violet/20 tracking-wider">
-                Profil Joueur
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded bg-neon-violet/10 text-neon-violet border border-neon-violet/20 tracking-wider">
+                  Profil Joueur
+                </span>
+                {user.playerTag && (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 tracking-wider font-mono">
+                    {user.playerTag} (Lecture Seule)
+                  </span>
+                )}
+              </div>
               <h2 className="text-2xl font-display font-extrabold text-white uppercase tracking-wide mt-2">
                 Modifier ma Player Card
               </h2>
