@@ -23,7 +23,7 @@ const getTierTextGlow = (tierColor) => {
   return styles[tierColor] || styles.bronze
 }
 
-export default function Leaderboard({ players, currentUser }) {
+export default function Leaderboard({ players, currentUser, onSelectPlayer }) {
   const [activeTab, setActiveTab] = useState('Général')
 
   // Sort and filter players
@@ -99,7 +99,8 @@ export default function Leaderboard({ players, currentUser }) {
             return (
               <div
                 key={player.id}
-                className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl border transition-all duration-300 hover:bg-zinc-800/80 ${
+                onClick={() => onSelectPlayer && onSelectPlayer({ ...player, globalRank: index + 1 })}
+                className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl border transition-all duration-300 hover:bg-zinc-800/80 cursor-pointer hover:scale-[1.01] ${
                   isTop1 ? 'bg-gradient-to-r from-[#ffd700]/10 to-transparent border-[#ffd700]/30 shadow-[inset_0_0_20px_rgba(255,215,0,0.05)]' :
                   isTop2 ? 'bg-gradient-to-r from-[#c0c0c0]/10 to-transparent border-[#c0c0c0]/20' :
                   isTop3 ? 'bg-gradient-to-r from-[#cd7f32]/10 to-transparent border-[#cd7f32]/20' :

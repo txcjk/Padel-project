@@ -1,173 +1,192 @@
-import { MapPin, Shield, Flame, Zap, Award, TrendingUp, Hand, Crosshair } from 'lucide-react'
+import { Crown, Medal } from 'lucide-react'
 
-function FairPlayBar({ score }) {
-  const color =
-    score >= 80 ? 'bg-emerald-500' :
-    score >= 70 ? 'bg-amber-500' :
-    'bg-red-500'
-  const glowColor =
-    score >= 80 ? 'shadow-emerald-500/30' :
-    score >= 70 ? 'shadow-amber-500/30' :
-    'shadow-red-500/30'
-  const label =
-    score >= 80 ? 'Exemplaire' :
-    score >= 70 ? 'Correct' :
-    'Attention'
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Trust Score</span>
-        <div className="flex items-center gap-1.5">
-          <Shield className={`w-3.5 h-3.5 ${score >= 80 ? 'text-emerald-400' : score >= 70 ? 'text-amber-400' : 'text-red-400'}`} />
-          <span className={`text-sm font-bold ${score >= 80 ? 'text-emerald-400' : score >= 70 ? 'text-amber-400' : 'text-red-400'}`}>
-            {score}%
-          </span>
-          <span className="text-[10px] text-zinc-500 ml-1">— {label}</span>
-        </div>
-      </div>
-      <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${color} shadow-lg ${glowColor} transition-all duration-700 ease-out`}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function Badge({ label, color }) {
-  const styles =
-    color === 'violet'
-      ? 'bg-neon-violet/15 text-purple-300 border-neon-violet/30'
-      : 'bg-neon-lime/10 text-lime-300 border-neon-lime/25'
-  const icon =
-    color === 'violet'
-      ? <Flame className="w-3 h-3" />
-      : <Zap className="w-3 h-3" />
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${styles} transition-transform hover:scale-105`}>
-      {icon}
-      {label}
-    </span>
-  )
-}
-
-function StatItem({ icon: Icon, label, value, accent }) {
-  return (
-    <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-zinc-800/40 border border-zinc-700/20">
-      <Icon className={`w-4 h-4 ${accent || 'text-zinc-400'}`} />
-      <span className={`text-lg font-bold font-display ${accent || 'text-zinc-200'}`}>{value}</span>
-      <span className="text-[10px] text-zinc-500 uppercase tracking-wider">{label}</span>
-    </div>
-  )
-}
-
+// FIFA Tier definitions
 const rankStyles = {
-  bronze: 'bg-[#cd7f32]/20 border-[#cd7f32]/50 text-[#cd7f32] glow-bronze',
-  silver: 'bg-[#c0c0c0]/20 border-[#c0c0c0]/50 text-[#c0c0c0] glow-silver',
-  gold: 'bg-[#ffd700]/20 border-[#ffd700]/50 text-[#ffd700] glow-gold',
-  platinum: 'bg-[#00ced1]/20 border-[#00ced1]/50 text-[#00ced1] glow-platinum',
-  diamond: 'bg-[#b026ff]/30 border-[#b026ff]/60 text-[#b026ff] glow-diamond'
+  bronze: {
+    bgInner: 'from-[#412920] via-[#221511] to-[#120b09]',
+    bgOuter: 'from-[#cd7f32] via-[#8c5a47] to-[#452b17]',
+    textColor: 'text-[#cd7f32]',
+    glow: 'drop-shadow-[0_0_8px_rgba(205,127,50,0.6)]',
+    label: 'Bronze'
+  },
+  silver: {
+    bgInner: 'from-[#424952] via-[#24292e] to-[#13161a]',
+    bgOuter: 'from-[#e0e5ec] via-[#8a95a5] to-[#4a5568]',
+    textColor: 'text-[#e0e5ec]',
+    glow: 'drop-shadow-[0_0_8px_rgba(224,229,236,0.6)]',
+    label: 'Argent'
+  },
+  gold: {
+    bgInner: 'from-[#4d3f0c] via-[#1f1905] to-[#0c0a02]',
+    bgOuter: 'from-[#ffe066] via-[#d4af37] to-[#7a6214]',
+    textColor: 'text-[#ffe066]',
+    glow: 'drop-shadow-[0_0_12px_rgba(255,215,0,0.75)]',
+    label: 'Or'
+  },
+  platinum: {
+    bgInner: 'from-[#0a3030] via-[#041616] to-[#010a0a]',
+    bgOuter: 'from-[#00ffff] via-[#00a3a3] to-[#004d4d]',
+    textColor: 'text-[#00ffff]',
+    glow: 'drop-shadow-[0_0_12px_rgba(0,255,255,0.85)]',
+    label: 'Platine'
+  },
+  diamond: {
+    bgInner: 'from-[#2f1557] via-[#15072b] to-[#0a0316]',
+    bgOuter: 'from-[#d47fff] via-[#a020f0] to-[#4b0082]',
+    textColor: 'text-[#d47fff]',
+    glow: 'drop-shadow-[0_0_16px_rgba(212,127,255,0.95)]',
+    label: 'Diamant'
+  }
 }
 
 export default function PlayerCard({ user }) {
-  const savedTier =
-    user.matchesSaved >= 10 ? { label: 'Or', color: 'text-amber-400' } :
-    user.matchesSaved >= 5 ? { label: 'Argent', color: 'text-zinc-300' } :
-    { label: 'Bronze', color: 'text-amber-600' }
-    
-  // Handle the new rank object or fallback
-  const rankLabel = typeof user.rank === 'object' ? user.rank.label : user.rank
   const rankColorKey = typeof user.rank === 'object' ? user.rank.color : 'bronze'
-  const rankBadgeClass = rankStyles[rankColorKey] || rankStyles.bronze
-
-  // Default missing gamification fields to graceful fallbacks
-  const playStyleIcon = user.playStyle === 'Attaquant' ? '⚔️' : user.playStyle === 'Défenseur' ? '🛡️' : '🧠'
+  const style = rankStyles[rankColorKey] || rankStyles.bronze
   
-  return (
-    <div className="rounded-2xl bg-zinc-900/80 border border-zinc-800/60 overflow-hidden backdrop-blur-sm">
-      {/* Top gradient accent */}
-      <div className="h-1 bg-gradient-to-r from-neon-lime via-emerald-400 to-neon-violet" />
+  const playStyleShort = user.playStyle === 'Attaquant' ? 'ATT' : user.playStyle === 'Défenseur' ? 'DEF' : 'STR'
+  const handInitial = user.hand === 'Gaucher' ? 'G' : 'D'
+  const isDiamond = rankColorKey === 'diamond'
+  const rankNum = Number(user.globalRank || 12)
 
-      <div className="p-5 space-y-5">
-        {/* Avatar + Identity */}
-        <div className="flex items-start gap-4">
-          <div className="relative shrink-0 mt-1">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center border border-zinc-700/40 text-xl font-bold text-zinc-200 font-display">
-              {user.firstName[0]}{user.lastName[0]}
+  return (
+    <div className="w-full max-w-[320px] mx-auto group relative">
+      {/* 
+        PREMIUM DIAMOND AURA GLOW (Behind the card):
+        A stunning, pulsing blurred neon glow that creates a gorgeous diamond halo, 
+        100% bug-free since it does not rely on browser polygon clip-paths!
+      */}
+      {isDiamond && (
+        <div 
+          className="absolute -inset-4 bg-gradient-to-br from-[#d47fff] via-[#a020f0] to-[#4b0082] rounded-[30px] opacity-70 blur-2xl group-hover:opacity-95 transition-opacity duration-500 animate-pulse z-0"
+        />
+      )}
+
+      {/* Wrapper External Card (Border Gradient) */}
+      <div 
+        className={`relative p-[3px] bg-gradient-to-br ${style.bgOuter} transition-all duration-500 hover:scale-[1.03] z-10 filter drop-shadow-2xl`}
+        style={{ clipPath: 'polygon(50% 0%, 100% 12%, 100% 85%, 50% 100%, 0% 85%, 0% 12%)' }}
+      >
+        {/* Inner Card (Dark Background) */}
+        <div 
+          className={`relative w-full aspect-[1/1.4] bg-gradient-to-b ${style.bgInner} flex flex-col justify-between p-4 pb-8`}
+          style={{ clipPath: 'polygon(50% 0%, 100% 12%, 100% 85%, 50% 100%, 0% 85%, 0% 12%)' }}
+        >
+          {/* 1. TOP HEADER: Centered Elo Rating */}
+          <div className="flex flex-col items-center pt-3 z-10">
+            <span className={`text-5xl font-display font-black tracking-tight ${style.textColor} ${style.glow} drop-shadow-[0_3px_5px_rgba(0,0,0,0.9)]`}>
+              {user.elo}
+            </span>
+            <span className="text-[11px] font-black text-white uppercase tracking-widest mt-0.5 drop-shadow-md">
+              {style.label}
+            </span>
+          </div>
+
+          {/* 2. MIDDLE CONTENT: Photo & Left Badges */}
+          <div className="relative flex justify-between items-center h-[42%] mt-1 px-4 z-10">
+            {/* Left side: vertical stats */}
+            <div className="flex flex-col items-center gap-1.5 bg-black/40 px-2.5 py-2 rounded-xl border border-white/10 backdrop-blur-sm shadow-lg">
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-black text-white leading-none">{playStyleShort}</span>
+                <span className="text-[7px] font-bold text-white/50 tracking-wider uppercase">POS</span>
+              </div>
+              <div className="h-[1px] w-6 bg-white/20"></div>
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-black text-white leading-none">{handInitial}</span>
+                <span className="text-[7px] font-bold text-white/50 tracking-wider uppercase">MAIN</span>
+              </div>
+              <div className="h-[1px] w-6 bg-white/20"></div>
+              <span className="text-base leading-none">🇫🇷</span>
             </div>
-            <div className={`absolute -bottom-2 -right-3 px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-wider ${rankBadgeClass}`}>
-              {rankLabel}
+
+            {/* Right side: Photo container */}
+            <div className="w-[68%] h-full flex justify-center items-end relative overflow-hidden">
+              {user.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={user.firstName} 
+                  className="w-full h-full object-cover object-top"
+                  style={{ WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)' }}
+                />
+              ) : (
+                <div 
+                  className="w-full h-full flex flex-col items-center justify-end pb-2"
+                  style={{ WebkitMaskImage: 'linear-gradient(to bottom, black 85%, transparent 100%)' }}
+                >
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center border-4 border-white/20 shadow-2xl">
+                    <span className="text-3xl font-black font-display text-white tracking-tighter drop-shadow-lg">
+                      {user.firstName ? user.firstName[0] : 'J'}{user.lastName ? user.lastName[0] : 'P'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-display font-bold text-xl text-zinc-100 truncate">
+
+          {/* 3. MIDDLE SECTION: Name & Club */}
+          <div className="relative z-10 text-center px-2 mt-1">
+            <h2 className="font-display font-black text-lg uppercase tracking-widest text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] truncate">
               {user.firstName} {user.lastName}
             </h2>
-            <div className="flex flex-col gap-1 mt-1">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs">🏟️</span>
-                <span className="text-xs font-medium text-zinc-400">{user.club || 'Club Inconnu'}</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-3 h-3 text-zinc-500" />
-                <span className="text-xs text-zinc-500">{user.city}{user.region ? `, ${user.region}` : ''}</span>
-              </div>
-            </div>
-            <div className="mt-2.5">
-              <span className={`text-2xl font-display font-extrabold text-glow-${rankColorKey} ${rankStyles[rankColorKey].split(' ')[2]}`}>
-                {user.elo}
+            <div className="flex items-center justify-center gap-1 mt-0.5 opacity-90 drop-shadow-md">
+              <span className="text-[10px]">🏟️</span>
+              <span className="text-[9px] font-extrabold text-white uppercase tracking-widest truncate max-w-[170px]">
+                {user.club || 'Club Inconnu'}
               </span>
-              <span className="text-xs text-zinc-500 ml-1.5">Elo Points</span>
             </div>
           </div>
-        </div>
 
-        {/* Gamification Pills (Caractéristiques) */}
-        <div className="flex items-center gap-2 pt-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/50">
-             <span className="text-[11px] font-semibold text-zinc-300">👋 {user.hand || 'Droitier'}</span>
+          {/* 4. BOTTOM SECTION: FIFA Stats Grid */}
+          <div className="relative z-10 px-4 mt-1">
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/40 to-transparent mb-2"></div>
+            
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-center">
+              {/* Col 1 */}
+              <div className="flex flex-col items-center">
+                <span className="text-[13px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{(user.elo ?? 1000)}</span>
+                <span className="text-[8px] font-black text-white/50 uppercase tracking-widest leading-none">Score Elo</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[13px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{(user.fairPlay ?? 95)}%</span>
+                <span className="text-[8px] font-black text-white/50 uppercase tracking-widest leading-none">Fair-Play</span>
+              </div>
+              {/* Col 2 */}
+              <div className="flex flex-col items-center">
+                <span className="text-[13px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{(user.punctuality ?? 98)}%</span>
+                <span className="text-[8px] font-black text-white/50 uppercase tracking-widest leading-none">Ponctuel</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <span className="text-[13px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{(user.matchesSaved ?? 2)}</span>
+                <span className="text-[8px] font-black text-white/50 uppercase tracking-widest leading-none">Sauvetages</span>
+              </div>
+            </div>
+
+            <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/40 to-transparent mt-2 mb-2"></div>
+            
+            {/* Rank Achievement Badge (Icon + Text side-by-side ONLY for top 3, otherwise just text) */}
+            <div className="flex items-center justify-center gap-2 mt-2 z-10">
+              {rankNum === 1 ? (
+                <>
+                  <Crown className="w-5 h-5 text-[#ffd700] filter drop-shadow-[0_0_4px_rgba(255,215,0,0.6)] animate-bounce" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#ffd700] drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.8)]">#1 Général</span>
+                </>
+              ) : rankNum === 2 ? (
+                <>
+                  <Medal className="w-5 h-5 text-[#c0c0c0] filter drop-shadow-[0_0_3px_rgba(192,192,192,0.4)]" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-300 drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.8)]">#2 Général</span>
+                </>
+              ) : rankNum === 3 ? (
+                <>
+                  <Medal className="w-5 h-5 text-[#cd7f32] filter drop-shadow-[0_0_3px_rgba(205,127,50,0.4)]" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#cd7f32] drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.8)]">#3 Général</span>
+                </>
+              ) : (
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.8)]">
+                  #{rankNum} Général
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/50">
-             <span className="text-[11px] font-semibold text-zinc-300">{playStyleIcon} {user.playStyle || 'Stratège'}</span>
-          </div>
-        </div>
 
-        {/* Stats mini-grid */}
-        <div className="grid grid-cols-3 gap-2">
-          <StatItem icon={TrendingUp} label="Elo" value={user.elo} accent="text-neon-lime" />
-          <StatItem icon={Shield} label="Fair-Play" value={`${user.fairPlay}%`} accent="text-emerald-400" />
-          <StatItem icon={Award} label="Sauvés" value={user.matchesSaved} accent="text-neon-violet" />
-        </div>
-
-        {/* Fair-Play bar */}
-        <FairPlayBar score={user.fairPlay} />
-
-        {/* Punctuality */}
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs text-zinc-500 uppercase tracking-wider">Ponctualité</span>
-          <span className="text-sm font-semibold text-emerald-400">{user.punctuality}%</span>
-        </div>
-
-        {/* Badges */}
-        <div>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 font-medium">Badges de Reconnaissance</p>
-          <div className="flex flex-wrap gap-2">
-            {user.badges.map((b, i) => (
-              <Badge key={i} label={b.label} color={b.color} />
-            ))}
-          </div>
-        </div>
-
-        {/* Saved tier badge */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-zinc-800/50 border border-zinc-700/30">
-          <Award className={`w-5 h-5 ${savedTier.color}`} />
-          <div>
-            <p className={`text-sm font-bold ${savedTier.color}`}>Sauveur {savedTier.label}</p>
-            <p className="text-[10px] text-zinc-500">{user.matchesSaved} matchs sauvés au total</p>
-          </div>
         </div>
       </div>
     </div>

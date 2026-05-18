@@ -10,6 +10,8 @@ import Leaderboard from './components/Leaderboard.jsx'
 import ScoreInputModal from './components/ScoreInputModal.jsx'
 import GLHFNudgeModal from './components/GLHFNudgeModal.jsx'
 import ScoreApprovalBanner from './components/ScoreApprovalBanner.jsx'
+import PlayerProfileModal from './components/PlayerProfileModal.jsx'
+import CGU from './components/CGU.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -147,6 +149,8 @@ export default function App() {
   const [showGLHFNudge, setShowGLHFNudge] = useState(false)
   const [showScoreModal, setShowScoreModal] = useState(false)
   const [activeScoreMatch, setActiveScoreMatch] = useState(null)
+  const [selectedPlayer, setSelectedPlayer] = useState(null)
+  const [showCGU, setShowCGU] = useState(false)
 
   // Listen to Auth changes
   useEffect(() => {
@@ -172,10 +176,36 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const registerUserDevice = async (userId) => {
+    if (isDemo) return;
+    try {
+      let deviceUuid = localStorage.getItem('padel_arena_device_uuid')
+      if (!deviceUuid) {
+        deviceUuid = crypto.randomUUID()
+        localStorage.setItem('padel_arena_device_uuid', deviceUuid)
+      }
+
+      const { error } = await supabase
+        .from('user_devices')
+        .upsert({
+          user_id: userId,
+          device_uuid: deviceUuid,
+          last_login_at: new Date().toISOString()
+        }, { onConflict: 'user_id, device_uuid' })
+
+      if (error) {
+        console.warn("Erreur lors de l'enregistrement de l'appareil:", error.message)
+      }
+    } catch (err) {
+      console.warn("Impossible d'enregistrer l'appareil:", err.message)
+    }
+  }
+
   // Load user data if logged in
   useEffect(() => {
     if (session && session.user) {
       loadSupabaseData(session.user.id)
+      registerUserDevice(session.user.id)
     }
   }, [session])
 
@@ -196,7 +226,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, region, club, hand, play_style, elo_rating, fair_play_score, punctuality_rate, matches_saved_count')
+        .select('id, first_name, last_name, city, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count')
         .eq('id', userId)
         .single()
 
@@ -212,7 +242,7 @@ export default function App() {
           club: data.club || 'Padel Arena',
           hand: data.hand || 'Droitier',
           playStyle: data.play_style || 'Stratège',
-          avatar: null,
+          avatar: data.avatar_url || null,
           elo: data.elo_rating ?? 1000,
           rank: getRankFromElo(data.elo_rating ?? 1000),
           fairPlay: data.fair_play_score ?? 100,
@@ -271,7 +301,22 @@ export default function App() {
         .rpc('find_last_urgent_matches', { p_user_id: userId })
 
       if (error) throw error
-      if (data) {
+      if (data && data.length > 0) {
+        const matchIds = data.map(m => m.id)
+        
+        // Récupérer dynamiquement le nombre de participants pour chaque match urgent
+        const { data: participations, error: partError } = await supabase
+          .from('match_participations')
+          .select('match_id')
+          .in('match_id', matchIds)
+          
+        if (partError) throw partError
+        
+        const counts = {}
+        participations.forEach(p => {
+          counts[p.match_id] = (counts[p.match_id] || 0) + 1
+        })
+
         const mapped = data.map(m => {
           const dateObj = new Date(m.scheduled_at)
           const isToday = dateObj.toDateString() === new Date().toDateString()
@@ -281,11 +326,13 @@ export default function App() {
             time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             date: isToday ? "Aujourd'hui" : dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
             eloRequired: `${m.elo_min ?? 800}-${m.elo_max ?? 2000}`,
-            playersJoined: 0, // Sera mis à jour si besoin
+            playersJoined: counts[m.id] || 0,
             playersNeeded: 4,
           }
         })
         setUrgentMatches(mapped)
+      } else {
+        setUrgentMatches([])
       }
     } catch (err) {
       console.error("Erreur matches urgents:", err.message)
@@ -341,6 +388,9 @@ export default function App() {
 
           const needsReview = m.status === 'Completed' && playersList.length > 0 && !reviewedMatchIds.has(m.id)
 
+          const myParticipation = m.match_participations?.find(p => p.player_id === userId);
+          const myTeam = myParticipation ? myParticipation.team : 1;
+
           return {
             id: m.id,
             club: m.club || 'Club Padel',
@@ -352,6 +402,7 @@ export default function App() {
             eloChange: eloChangesMap[m.id] || 0,
             needsReview: needsReview,
             players: playersList,
+            myTeam: myTeam,
           }
         })
         setRecentMatches(mapped)
@@ -361,7 +412,7 @@ export default function App() {
     }
   }
 
-  // --- Real Interactions ---
+  // --- Real Interactions (Supabase-Connected) ---
 
   const handleSaveMatch = async (matchId) => {
     if (isDemo) {
@@ -371,12 +422,92 @@ export default function App() {
       alert("Félicitations ! Vous avez sauvé le match en Mode Démo.")
       return
     }
+
+    try {
+      setLoading(true)
+
+      // Récupérer les participations actuelles pour vérifier si complet
+      const { data: participations, error: partError } = await supabase
+        .from('match_participations')
+        .select('team, player_id')
+        .eq('match_id', matchId)
+
+      if (partError) throw partError
+
+      if (participations.length >= 4) {
+        throw new Error("Ce match est déjà complet.")
+      }
+
+      if (participations.some(p => p.player_id === userProfile.id)) {
+        throw new Error("Vous participez déjà à ce match.")
+      }
+
+      // Attribution de l'équipe (1 s'il reste de la place, sinon 2)
+      const team1Count = participations.filter(p => p.team === 1).length
+      const assignedTeam = team1Count < 2 ? 1 : 2
+
+      // Rejoindre le match
+      const { error: insertError } = await supabase
+        .from('match_participations')
+        .insert({
+          match_id: matchId,
+          player_id: userProfile.id,
+          team: assignedTeam,
+          joined_via_last: true
+        })
+
+      if (insertError) throw insertError
+
+      // Si le match a maintenant 4 joueurs, mettre à jour le statut en 'Full'
+      if (participations.length === 3) {
+        const { error: updateError } = await supabase
+          .from('matches')
+          .update({ status: 'Full' })
+          .eq('id', matchId)
+        
+        if (updateError) throw updateError
+      }
+
+      await loadSupabaseData(userProfile.id)
+      setShowGLHFNudge(true)
+      alert("Match sauvé avec succès ! GLHF !")
+    } catch (err) {
+      console.error("Erreur lors de la sauvegarde du match :", err.message)
+      alert(`Impossible de rejoindre le match : ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleReviewSubmit = async (matchId, ratings) => {
     if (isDemo) {
       setRecentMatches(prev => prev.map(m => m.id === matchId ? { ...m, needsReview: false } : m))
       return
+    }
+
+    try {
+      setLoading(true)
+      const reviewInserts = Object.entries(ratings).map(([playerId, scores]) => ({
+        match_id: matchId,
+        reviewer_id: userProfile.id,
+        reviewed_id: playerId,
+        punctuality_score: scores.punctuality,
+        behavior_score: scores.behavior
+      }))
+
+      const { error } = await supabase
+        .from('reviews')
+        .insert(reviewInserts)
+
+      if (error) throw error
+
+      alert("Vos évaluations ont été soumises avec succès !")
+      await fetchRecentMatches(userProfile.id)
+    } catch (err) {
+      console.error("Erreur lors de la soumission des avis :", err.message)
+      alert(`Impossible d'enregistrer les évaluations : ${err.message}`)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -391,67 +522,173 @@ export default function App() {
     setShowGLHFNudge(false)
   }
 
-  const handleScoreSubmit = (matchId, scores, isIncomplete) => {
-    // Send to Pending_Validation state (waiting consensus)
-    setRecentMatches(prev => prev.map(m => {
-      if (m.id === matchId) {
-        return {
-          ...m,
-          status: 'Pending_Validation',
-          score: scores,
-          type: isIncomplete ? 'Amical' : m.type,
-          needsReview: false
+  const handleScoreSubmit = async (matchId, scores, isIncomplete) => {
+    if (isDemo) {
+      setRecentMatches(prev => prev.map(m => {
+        if (m.id === matchId) {
+          return {
+            ...m,
+            status: 'Pending_Validation',
+            score: scores,
+            type: isIncomplete ? 'Amical' : m.type,
+            needsReview: false
+          }
         }
+        return m
+      }))
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      const updateData = {
+        score_team_1: scores.team1,
+        score_team_2: scores.team2,
+        status: 'Pending_Validation'
       }
-      return m
-    }))
+
+      if (isIncomplete) {
+        updateData.match_type = 'Amical'
+      }
+
+      const { error } = await supabase
+        .from('matches')
+        .update(updateData)
+        .eq('id', matchId)
+
+      if (error) throw error
+
+      alert("Le score a été enregistré et est en attente de consensus (4/4).")
+      await fetchRecentMatches(userProfile.id)
+    } catch (err) {
+      console.error("Erreur lors de la soumission du score :", err.message)
+      alert(`Impossible d'enregistrer le score : ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   // Consensus handlers (Approve / Dispute)
-  const handleApproveScore = (matchId) => {
-    alert("Consensus 4/4 validé ! Le score est définitivement scellé.")
-    setRecentMatches(prev => prev.map(m => {
-      if (m.id === matchId) {
-        const isAmical = m.type === 'Amical'
-        return {
-          ...m,
-          status: 'Completed',
-          eloChange: isAmical ? 0 : 16, // +16 Elo for validation success
-          needsReview: true
+  const handleApproveScore = async (matchId) => {
+    if (isDemo) {
+      alert("Consensus 4/4 validé ! Le score est définitivement scellé.")
+      setRecentMatches(prev => prev.map(m => {
+        if (m.id === matchId) {
+          const isAmical = m.type === 'Amical'
+          return {
+            ...m,
+            status: 'Completed',
+            eloChange: isAmical ? 0 : 16, // +16 Elo for validation success
+            needsReview: true
+          }
         }
-      }
-      return m
-    }))
-    // Boost user profile elo slightly for demo effect
-    setUserProfile(prev => ({
-      ...prev,
-      elo: prev.elo + 16,
-      rank: getRankFromElo(prev.elo + 16)
-    }))
+        return m
+      }))
+      // Boost user profile elo slightly for demo effect
+      setUserProfile(prev => ({
+        ...prev,
+        elo: prev.elo + 16,
+        rank: getRankFromElo(prev.elo + 16)
+      }))
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Valider le match en changeant le statut en 'Completed'.
+      // Le trigger SQL s'occupe de mettre à jour les ELOs de chacun.
+      const { error } = await supabase
+        .from('matches')
+        .update({ status: 'Completed' })
+        .eq('id', matchId)
+
+      if (error) throw error
+
+      alert("Match validé ! Le score est scellé et l'Elo a été mis à jour.")
+      await loadSupabaseData(userProfile.id)
+    } catch (err) {
+      console.error("Erreur lors de la validation du match :", err.message)
+      alert(`Impossible de valider le score : ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDisputeScore = (matchId) => {
-    alert("Litige enregistré. Le match est bloqué en attente d'arbitrage par le staff.")
-    setRecentMatches(prev => prev.map(m => {
-      if (m.id === matchId) {
-        return {
-          ...m,
-          status: 'Disputed'
+  const handleDisputeScore = async (matchId) => {
+    if (isDemo) {
+      alert("Litige enregistré. Le match est bloqué en attente d'arbitrage par le staff.")
+      setRecentMatches(prev => prev.map(m => {
+        if (m.id === matchId) {
+          return {
+            ...m,
+            status: 'Disputed'
+          }
         }
-      }
-      return m
-    }))
+        return m
+      }))
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Litige : réinitialise les scores et remet le match en statut 'Full' pour re-saisie consensuelle
+      const { error } = await supabase
+        .from('matches')
+        .update({
+          score_team_1: null,
+          score_team_2: null,
+          status: 'Full'
+        })
+        .eq('id', matchId)
+
+      if (error) throw error
+
+      alert("Contestation enregistrée ! Les scores ont été réinitialisés pour permettre une nouvelle saisie consensuelle.")
+      await fetchRecentMatches(userProfile.id)
+    } catch (err) {
+      console.error("Erreur lors de la contestation :", err.message)
+      alert(`Impossible d'enregistrer la contestation : ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleEmergencyCancel = (matchId) => {
-    setTimeout(() => {
-      alert("Vote 4/4 atteint. Le match a été annulé avec succès.")
-      setRecentMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'Cancelled' } : m))
-    }, 500)
+  const handleEmergencyCancel = async (matchId) => {
+    if (isDemo) {
+      setTimeout(() => {
+        alert("Vote 4/4 atteint. Le match a été annulé avec succès.")
+        setRecentMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'Cancelled' } : m))
+      }, 500)
+      return
+    }
+
+    try {
+      setLoading(true)
+      const { error } = await supabase
+        .from('matches')
+        .update({ status: 'Cancelled' })
+        .eq('id', matchId)
+
+      if (error) throw error
+
+      alert("Le match a été annulé avec succès.")
+      await fetchRecentMatches(userProfile.id)
+    } catch (err) {
+      console.error("Erreur lors de l'annulation :", err.message)
+      alert(`Impossible d'annuler le match : ${err.message}`)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleProposeRematch = (match) => {
     alert(`Formulaire de Revanche généré ! \nJoueurs pré-sélectionnés: Vous et ${match.players.length} autres.\nLieu: ${match.club}\nSélectionnez simplement une nouvelle date.`)
+  }
+
+  const handleChallengePlayer = (player) => {
+    alert(`Défi envoyé avec succès à ${player.firstName} ${player.lastName} ! Une invitation a été envoyée par notification.`)
+    setSelectedPlayer(null)
   }
 
   // --- Demo Mode Handlers ---
@@ -517,7 +754,7 @@ export default function App() {
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            <PlayerCard user={userProfile} />
+            <PlayerCard user={{ ...userProfile, globalRank: leaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
           </div>
 
           <div className="lg:col-span-8 animate-slide-in" style={{ animationDelay: '0.3s' }}>
@@ -531,7 +768,7 @@ export default function App() {
         </div>
         
         <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
-          <Leaderboard players={leaderboardPlayers} currentUser={userProfile} />
+          <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} />
         </section>
       </main>
 
@@ -552,6 +789,30 @@ export default function App() {
           onProposeRematch={handleProposeRematch}
           currentUser={userProfile}
         />
+      )}
+      {selectedPlayer && (
+        <PlayerProfileModal 
+          player={selectedPlayer} 
+          onClose={() => setSelectedPlayer(null)} 
+          onChallenge={handleChallengePlayer} 
+        />
+      )}
+
+      {/* Footer */}
+      <footer className="border-t border-zinc-900 bg-zinc-950 py-8 text-center text-xs text-zinc-500 mt-12">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>© 2026 elomatch. Tous droits réservés.</p>
+          <button 
+            onClick={() => setShowCGU(true)} 
+            className="hover:text-neon-lime transition-colors font-bold uppercase tracking-wider text-[10px] cursor-pointer"
+          >
+            Conditions Générales d'Utilisation (CGU)
+          </button>
+        </div>
+      </footer>
+
+      {showCGU && (
+        <CGU onClose={() => setShowCGU(false)} />
       )}
     </div>
   )

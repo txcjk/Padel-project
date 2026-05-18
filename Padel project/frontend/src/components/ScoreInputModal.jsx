@@ -13,10 +13,13 @@ export default function ScoreInputModal({ match, onClose, onSubmitScore, onPropo
   const [isIncomplete, setIsIncomplete] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
 
-  // Identify teams
-  // In demo: currentUser is Team 1.
-  const myPartnerName = "Lucas M." // Mock partner
-  const opponentNames = match.players ? match.players.filter(p => p.team === 2).map(p => p.name).join(' & ') : "Sofia R. & Marc T."
+  // Identify teams dynamically
+  const myTeamNum = match.myTeam || 1;
+  const partner = match.players ? match.players.find(p => p.team === myTeamNum) : null;
+  const myPartnerName = partner ? partner.name : "Lucas M.";
+  const opponentNames = match.players && match.players.length > 0
+    ? match.players.filter(p => p.team !== myTeamNum).map(p => p.name).join(' & ')
+    : "Sofia R. & Marc T.";
 
   // Determine if a 3rd set is required
   const wonS1Us = s1Us > s1Them

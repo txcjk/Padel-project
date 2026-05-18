@@ -55,6 +55,15 @@ DECLARE
   v_score_t1    FLOAT;
   v_delta_t1    FLOAT;
   v_delta_t2    FLOAT;
+
+  -- variables pour le parsing du score
+  v_set_scores  TEXT[];
+  v_games       TEXT[];
+  v_sets_t1     INT := 0;
+  v_sets_t2     INT := 0;
+  v_set         TEXT;
+  v_g1          INT;
+  v_g2          INT;
 BEGIN
   IF NEW.match_type <> 'Ranked' THEN RETURN NEW; END IF;
   IF OLD.status = 'Completed' OR NEW.status <> 'Completed' THEN RETURN NEW; END IF;
@@ -70,10 +79,30 @@ BEGIN
   v_expected_t1 := 1.0 / (1.0 + POWER(10.0, (v_avg_elo_t2 - v_avg_elo_t1) / 400.0));
   v_expected_t2 := 1.0 - v_expected_t1;
 
+  -- Découpage et parsing du score (ex: "6-4 / 3-6 / 6-2") pour déterminer le vrai vainqueur
+  IF NEW.score_team_1 IS NOT NULL AND NEW.score_team_2 IS NOT NULL THEN
+    v_set_scores := regexp_split_to_array(NEW.score_team_1, '\s*/\s*');
+    FOREACH v_set IN ARRAY v_set_scores LOOP
+      v_games := regexp_split_to_array(v_set, '\s*-\s*');
+      IF array_length(v_games, 1) = 2 THEN
+        BEGIN
+          v_g1 := v_games[1]::INT;
+          v_g2 := v_games[2]::INT;
+          IF v_g1 > v_g2 THEN
+            v_sets_t1 := v_sets_t1 + 1;
+          ELSIF v_g2 > v_g1 THEN
+            v_sets_t2 := v_sets_t2 + 1;
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          -- Ignore les erreurs de conversion pour rester tolérant
+        END;
+      END IF;
+    END LOOP;
+  END IF;
+
   v_score_t1 := CASE
-    WHEN NEW.score_team_1 IS NULL OR NEW.score_team_2 IS NULL THEN 0.5
-    WHEN NEW.score_team_1 > NEW.score_team_2 THEN 1.0
-    WHEN NEW.score_team_1 < NEW.score_team_2 THEN 0.0
+    WHEN v_sets_t1 > v_sets_t2 THEN 1.0
+    WHEN v_sets_t1 < v_sets_t2 THEN 0.0
     ELSE 0.5
   END;
 
@@ -107,7 +136,7 @@ $$;
 -- Bloquer l'appel direct via API (trigger uniquement)
 REVOKE EXECUTE ON FUNCTION calculate_elo_match() FROM anon, authenticated;
 
--- 3.2 Fair play score (trigger uniquement)
+-- 3.2 Fair play score (trigger uniquement, supporte INSERT, UPDATE et DELETE)
 CREATE OR REPLACE FUNCTION update_fair_play_score()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -115,30 +144,52 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_avg_score FLOAT;
+  v_target_id   UUID;
+  v_avg_score   FLOAT;
 BEGIN
+  IF TG_OP = 'DELETE' THEN
+    v_target_id := OLD.reviewed_id;
+  ELSE
+    v_target_id := NEW.reviewed_id;
+  END IF;
+
   SELECT AVG((punctuality_score + behavior_score) / 2.0) * 20.0
   INTO v_avg_score
-  FROM reviews WHERE reviewed_id = NEW.reviewed_id;
+  FROM reviews WHERE reviewed_id = v_target_id;
 
   IF v_avg_score IS NOT NULL THEN
     UPDATE profiles
     SET fair_play_score = LEAST(100, GREATEST(0, ROUND(v_avg_score)::INT))
-    WHERE id = NEW.reviewed_id;
+    WHERE id = v_target_id;
+  ELSE
+    UPDATE profiles
+    SET fair_play_score = 100
+    WHERE id = v_target_id;
   END IF;
 
   UPDATE profiles
-  SET punctuality_rate = LEAST(100, GREATEST(0, (
+  SET punctuality_rate = LEAST(100, GREATEST(0, COALESCE((
     SELECT ROUND(AVG(punctuality_score) * 20.0)::INT
-    FROM reviews WHERE reviewed_id = NEW.reviewed_id
-  )))
-  WHERE id = NEW.reviewed_id;
+    FROM reviews WHERE reviewed_id = v_target_id
+  ), 100)))
+  WHERE id = v_target_id;
 
-  RETURN NEW;
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  ELSE
+    RETURN NEW;
+  END IF;
 END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION update_fair_play_score() FROM anon, authenticated;
+
+-- Recréation du trigger fair-play pour supporter INSERT, UPDATE et DELETE
+DROP TRIGGER IF EXISTS trg_update_fair_play ON reviews;
+CREATE TRIGGER trg_update_fair_play
+  AFTER INSERT OR UPDATE OR DELETE ON reviews
+  FOR EACH ROW
+  EXECUTE FUNCTION update_fair_play_score();
 
 -- 3.3 Check fair play eligibility (trigger uniquement)
 CREATE OR REPLACE FUNCTION check_fair_play_eligibility()
@@ -276,7 +327,8 @@ REVOKE EXECUTE ON FUNCTION update_match_status_timestamp() FROM anon, authentica
 
 DROP VIEW IF EXISTS public.revealed_reviews;
 
-CREATE OR REPLACE VIEW public.revealed_reviews AS
+CREATE OR REPLACE VIEW public.revealed_reviews 
+WITH (security_invoker = true) AS
 SELECT r.id, r.match_id, r.reviewer_id, r.reviewed_id,
        r.punctuality_score, r.behavior_score, r.created_at
 FROM reviews r
@@ -391,10 +443,10 @@ CREATE POLICY "Reviews: suppression par reviewer dans 24h"
 -- 6. POSTGIS — RLS sur spatial_ref_sys (table système)
 -- ************************************************************
 
-ALTER TABLE IF EXISTS public.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE IF EXISTS public.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "spatial_ref_sys: lecture publique"
-  ON public.spatial_ref_sys FOR SELECT USING (true);
+-- CREATE POLICY "spatial_ref_sys: lecture publique"
+--   ON public.spatial_ref_sys FOR SELECT USING (true);
 
 -- ============================================================
 -- FIN DU SCRIPT

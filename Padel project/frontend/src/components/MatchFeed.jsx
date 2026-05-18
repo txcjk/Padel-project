@@ -26,6 +26,7 @@ function EloChangeTag({ change }) {
 function MatchCard({ match, onOpenReview, onOpenScore, onEmergencyCancel }) {
   const isRanked = match.type === 'Ranked'
   const isActive = match.status === 'Pending' || match.status === 'Full'
+  const isPendingValidation = match.status === 'Pending_Validation'
   const [showVote, setShowVote] = useState(false)
 
   const handleVoteYes = () => {
@@ -65,6 +66,11 @@ function MatchCard({ match, onOpenReview, onOpenScore, onEmergencyCancel }) {
               {isActive && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">
                   EN COURS
+                </span>
+              )}
+              {isPendingValidation && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider bg-neon-violet/20 text-neon-violet border border-neon-violet/30">
+                  ATTENTE VALIDATION
                 </span>
               )}
             </div>
@@ -153,7 +159,7 @@ function MatchCard({ match, onOpenReview, onOpenScore, onEmergencyCancel }) {
 
 export default function MatchFeed({ matches, onOpenReview, onOpenScore, onEmergencyCancel }) {
   const activeMatches = matches.filter(m => m.status === 'Pending' || m.status === 'Full')
-  const completedMatches = matches.filter(m => m.status === 'Completed' || m.status === 'Cancelled')
+  const completedMatches = matches.filter(m => m.status === 'Completed' || m.status === 'Cancelled' || m.status === 'Pending_Validation')
 
   return (
     <div className="space-y-6">
