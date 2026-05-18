@@ -304,6 +304,17 @@ export default function Auth({ onDemoLogin }) {
               <Zap className="w-3.5 h-3.5 text-neon-violet animate-pulse" />
               MODE DÉMO RAPIDE (Sans configuration)
             </button>
+
+            {/* Support Notice */}
+            <p className="text-[10px] text-zinc-500 text-center leading-relaxed pt-2">
+              Besoin d'aide avec votre compte ? Écrivez-nous à{' '}
+              <a 
+                href="mailto:ludow3b@gmail.com" 
+                className="text-zinc-400 hover:text-neon-lime transition-colors font-medium cursor-pointer"
+              >
+                ludow3b@gmail.com
+              </a>
+            </p>
           </div>
         </div>
       </div>

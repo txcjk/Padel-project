@@ -804,6 +804,15 @@ export default function App() {
       <footer className="border-t border-zinc-900 bg-zinc-950 py-8 text-center text-xs text-zinc-500 mt-12">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 elomatch. Tous droits réservés.</p>
+          <p className="text-zinc-500 text-xs">
+            Un problème ? Une idée ? Contactez le support :{' '}
+            <a 
+              href="mailto:ludow3b@gmail.com" 
+              className="text-zinc-400 hover:text-neon-lime font-medium transition-colors cursor-pointer"
+            >
+              ludow3b@gmail.com
+            </a>
+          </p>
           <button 
             onClick={() => setShowCGU(true)} 
             className="hover:text-neon-lime transition-colors font-bold uppercase tracking-wider text-[10px] cursor-pointer"
