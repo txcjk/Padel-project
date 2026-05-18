@@ -13,6 +13,7 @@ import ScoreApprovalBanner from './components/ScoreApprovalBanner.jsx'
 import PlayerProfileModal from './components/PlayerProfileModal.jsx'
 import CGU from './components/CGU.jsx'
 import PremiumSubscription from './components/PremiumSubscription.jsx'
+import OnboardingForm from './components/OnboardingForm.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -731,6 +732,23 @@ export default function App() {
   }
 
   if (!userProfile) return <Auth onDemoLogin={handleDemoLogin} />
+
+  // Check if profile is incomplete (missing firstName or lastName)
+  const isProfileIncomplete = !userProfile.firstName || !userProfile.lastName;
+
+  if (isProfileIncomplete) {
+    return (
+      <OnboardingForm 
+        user={userProfile} 
+        onComplete={(updatedProfile) => {
+          setUserProfile(prev => ({
+            ...prev,
+            ...updatedProfile
+          }))
+        }} 
+      />
+    )
+  }
 
   // Filter out disputed matches for visibility
   const visibleRecentMatches = recentMatches.filter(m => m.status !== 'Disputed')
