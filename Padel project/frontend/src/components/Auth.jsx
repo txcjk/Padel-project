@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { supabase, isConfigured } from '../supabaseClient'
-import { Zap, Mail, Lock, User, MapPin, AlertCircle, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Zap, Mail, Lock, User, MapPin, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import CGU from './CGU'
 
 export default function Auth({ onDemoLogin }) {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showCGU, setShowCGU] = useState(false)
 
@@ -42,6 +43,7 @@ export default function Auth({ onDemoLogin }) {
   const handleAuth = async (e) => {
     e.preventDefault()
     setError(null)
+    setSuccess(null)
     setLoading(true)
 
     if (!isConfigured) {
@@ -78,7 +80,7 @@ export default function Auth({ onDemoLogin }) {
           },
         })
         if (signUpError) throw signUpError
-        setError("Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte (si activé dans Supabase) ou connectez-vous.")
+        setSuccess("Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte (si activé dans Supabase) ou connectez-vous.")
         setIsLogin(true)
       }
     } catch (err) {
@@ -118,7 +120,7 @@ export default function Auth({ onDemoLogin }) {
           {/* Login/Register Tabs */}
           <div className="flex bg-zinc-950/60 p-1 rounded-xl border border-zinc-800/40">
             <button
-              onClick={() => { setIsLogin(true); setError(null) }}
+              onClick={() => { setIsLogin(true); setError(null); setSuccess(null); }}
               className={`flex-1 py-2.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-200 ${
                 isLogin
                   ? 'bg-zinc-800 text-zinc-100 shadow-md border border-zinc-700/30'
@@ -128,7 +130,7 @@ export default function Auth({ onDemoLogin }) {
               Connexion
             </button>
             <button
-              onClick={() => { setIsLogin(false); setError(null) }}
+              onClick={() => { setIsLogin(false); setError(null); setSuccess(null); }}
               className={`flex-1 py-2.5 rounded-lg text-xs font-bold tracking-wider uppercase transition-all duration-200 ${
                 !isLogin
                   ? 'bg-zinc-800 text-zinc-100 shadow-md border border-zinc-700/30'
@@ -145,6 +147,13 @@ export default function Auth({ onDemoLogin }) {
               <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs leading-relaxed animate-fade-in">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-neon-lime/10 border border-neon-lime/20 text-neon-lime text-xs leading-relaxed animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{success}</span>
               </div>
             )}
 
