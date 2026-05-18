@@ -94,7 +94,7 @@ export default function CGU({ onClose }) {
                 Conditions Générales d'Utilisation
               </h2>
               <p className="text-xs text-zinc-500 font-medium tracking-wide mt-0.5">
-                Application <span className="text-neon-lime">elomatch</span> (Padel Arena) • En vigueur au 18 mai 2026
+                Application <span className="text-neon-lime">elomatch</span> • En vigueur au 18 mai 2026
               </p>
             </div>
           </div>

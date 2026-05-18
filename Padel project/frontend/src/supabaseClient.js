@@ -12,7 +12,7 @@ const isConfigured =
 
 if (!isConfigured) {
   console.warn(
-    '⚠️ PadelArena : Supabase non configuré.\n' +
+    '⚠️ elomatch : Supabase non configuré.\n' +
     'Créez "frontend/.env" avec :\n' +
     '  VITE_SUPABASE_URL=https://votre-projet.supabase.co\n' +
     '  VITE_SUPABASE_ANON_KEY=votre-cle-anon\n' +

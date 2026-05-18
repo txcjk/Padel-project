@@ -106,8 +106,8 @@ export default function Auth({ onDemoLogin }) {
               <Zap className="w-6 h-6 text-zinc-950" strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-              <h1 className="font-display font-extrabold text-2xl tracking-tight text-zinc-100">
-                PADEL<span className="text-neon-lime">ARENA</span>
+              <h1 className="font-display font-extrabold text-2xl tracking-tight text-zinc-100 lowercase">
+                elo<span className="text-neon-lime">match</span>
               </h1>
               <span className="text-[10px] tracking-[0.25em] text-zinc-500 uppercase font-medium mt-0.5">
                 Competitive Hub

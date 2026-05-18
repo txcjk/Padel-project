@@ -179,10 +179,10 @@ export default function App() {
   const registerUserDevice = async (userId) => {
     if (isDemo) return;
     try {
-      let deviceUuid = localStorage.getItem('padel_arena_device_uuid')
+      let deviceUuid = localStorage.getItem('elomatch_device_uuid')
       if (!deviceUuid) {
         deviceUuid = crypto.randomUUID()
-        localStorage.setItem('padel_arena_device_uuid', deviceUuid)
+        localStorage.setItem('elomatch_device_uuid', deviceUuid)
       }
 
       const { error } = await supabase

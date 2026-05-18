@@ -55,8 +55,8 @@ export default function DashboardHeader({ user, onLogout }) {
               <Zap className="w-5 h-5 text-zinc-950" strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
-              <span className="font-display font-extrabold text-lg leading-tight tracking-tight text-zinc-100">
-                PADEL<span className="text-neon-lime">ARENA</span>
+              <span className="font-display font-extrabold text-lg leading-tight tracking-tight text-zinc-100 lowercase">
+                elo<span className="text-neon-lime">match</span>
               </span>
               <span className="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-medium -mt-0.5">
                 Competitive Hub
