@@ -35,6 +35,8 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_enforce_max_participants ON match_participations;
+
 CREATE TRIGGER trg_enforce_max_participants
   BEFORE INSERT ON match_participations
   FOR EACH ROW
@@ -61,6 +63,8 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+DROP TRIGGER IF EXISTS trg_prevent_self_review ON reviews;
 
 CREATE TRIGGER trg_prevent_self_review
   BEFORE INSERT ON reviews
