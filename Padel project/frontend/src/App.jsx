@@ -17,6 +17,7 @@ import OnboardingForm from './components/OnboardingForm.jsx'
 import EditProfileModal from './components/EditProfileModal.jsx'
 import ProStats from './components/ProStats.jsx'
 import RankedLimitModal from './components/RankedLimitModal.jsx'
+import AdminPanel from './components/AdminPanel.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -159,6 +160,10 @@ export default function App() {
   const [showPremium, setShowPremium] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
   const [showRankedLimit, setShowRankedLimit] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
+
+  // Admin access check
+  const isAdmin = session?.user?.email === 'ludow3b@gmail.com'
 
   // Elite status — TODO: connect to real subscription logic
   const isElite = userProfile?.isElite || false
@@ -775,6 +780,8 @@ export default function App() {
         onLogout={handleLogout} 
         onUpgradeClick={() => setShowPremium(true)} 
         onProfileClick={() => setShowEditProfile(true)} 
+        isAdmin={isAdmin}
+        onAdminClick={() => setShowAdminPanel(true)}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
@@ -897,6 +904,10 @@ export default function App() {
             }));
           }} 
         />
+      )}
+
+      {showAdminPanel && isAdmin && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
       )}
     </div>
   )

@@ -1,4 +1,4 @@
-import { Trophy, Zap, LogOut, Bell, Menu, X, Crown } from 'lucide-react'
+import { Trophy, Zap, LogOut, Bell, Menu, X, Crown, Settings } from 'lucide-react'
 import { useState } from 'react'
 
 function EloRankBadge({ elo, rank }) {
@@ -49,7 +49,7 @@ function UserAvatar({ firstName, lastName, avatar }) {
   )
 }
 
-export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProfileClick }) {
+export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProfileClick, isAdmin, onAdminClick }) {
   const [mobileOpen, setMobileOpen] = useState(false)
 
   return (
@@ -90,6 +90,18 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
               <Bell className="w-5 h-5 text-zinc-400 group-hover:text-zinc-200 transition-colors" />
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-neon-violet rounded-full border-2 border-zinc-950 animate-pulse" />
             </button>
+
+            {/* Admin Panel Button */}
+            {isAdmin && (
+              <button 
+                onClick={onAdminClick}
+                className="p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group cursor-pointer border border-neon-violet/30 hover:border-neon-violet/80 glow-violet"
+                aria-label="Administration"
+                title="Panneau d'Administration"
+              >
+                <Settings className="w-5 h-5 text-neon-violet group-hover:text-white transition-colors animate-[spin_10s_linear_infinite]" />
+              </button>
+            )}
 
             {/* Profile */}
             <button 
@@ -140,28 +152,34 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
               className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity focus:outline-none cursor-pointer"
             >
               <UserAvatar firstName={user.firstName} lastName={user.lastName} avatar={user.avatar} />
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-zinc-200 text-sm">{user.firstName} {user.lastName}</p>
-                  {user.playerTag && (
-                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded font-mono">
-                      {user.playerTag}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-zinc-500 mt-0.5">{user.city}</p>
+              <div className="flex flex-col">
+                <span className="text-base font-semibold text-zinc-200">{user.firstName} {user.lastName}</span>
+                {user.playerTag && (
+                  <span className="text-xs font-bold text-zinc-400 tracking-wide font-mono leading-none">
+                    {user.playerTag}
+                  </span>
+                )}
+                <span className="text-xs text-zinc-500 font-medium">{user.city}</span>
               </div>
             </button>
-
-            <button 
-              onClick={() => { setMobileOpen(false); onUpgradeClick(); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-neon-violet text-white font-black text-xs uppercase tracking-widest glow-violet cursor-pointer"
-            >
-              <Crown className="w-4 h-4" />
-              <span>Devenir Élite</span>
-            </button>
-
-            <EloRankBadge elo={user.elo} rank={user.rank} />
+            <div className="flex items-center gap-4">
+              <EloRankBadge elo={user.elo} rank={user.rank} />
+              <button 
+                onClick={() => { setMobileOpen(false); onUpgradeClick(); }}
+                className="flex flex-1 justify-center items-center gap-1.5 px-3 py-1.5 rounded-full bg-neon-violet/10 border border-neon-violet/30 text-neon-violet font-bold text-xs uppercase tracking-wider glow-violet cursor-pointer"
+              >
+                <Crown className="w-3.5 h-3.5" /> Élite
+              </button>
+              {isAdmin && (
+                <button 
+                  onClick={() => { setMobileOpen(false); onAdminClick(); }}
+                  className="p-1.5 rounded-lg bg-neon-violet/10 border border-neon-violet/30 text-neon-violet cursor-pointer"
+                  title="Administration"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
