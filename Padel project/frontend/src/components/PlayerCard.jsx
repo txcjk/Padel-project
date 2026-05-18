@@ -1,4 +1,5 @@
 import { Crown, Medal } from 'lucide-react'
+// Note: Crown is only used for rank #1 badge, not for Elite indicator
 
 // FIFA Tier definitions with internal metallic material styles
 const rankStyles = {
@@ -78,21 +79,27 @@ export default function PlayerCard({ user }) {
           className={`relative w-full aspect-[1/1.4] bg-gradient-to-br ${style.bgInner} ${style.borderAccent} flex flex-col justify-between p-4 pb-8 overflow-hidden`}
           style={{ clipPath: CLIP }}
         >
-          {/* Internal Metallic Reflection Overlay */}
-          <div 
-            className={`absolute inset-0 bg-gradient-to-br ${style.metalOverlay} pointer-events-none z-0`}
-            style={{ clipPath: CLIP }}
-          />
+          {/* Internal Metallic Reflection Overlay — Elite only */}
+          {isElite && (
+            <div 
+              className={`absolute inset-0 bg-gradient-to-br ${style.metalOverlay} pointer-events-none z-0`}
+              style={{ clipPath: CLIP }}
+            />
+          )}
 
-          {/* Animated Internal Shimmer Sweep */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" style={{ clipPath: CLIP }}>
-            <div className={`absolute inset-0 bg-gradient-to-r ${style.shimmerColor} animate-card-shimmer`} />
-          </div>
+          {/* Animated Internal Shimmer Sweep — Elite only */}
+          {isElite && (
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]" style={{ clipPath: CLIP }}>
+              <div className={`absolute inset-0 bg-gradient-to-r ${style.shimmerColor} animate-card-shimmer`} />
+            </div>
+          )}
 
-          {/* Elite Crown — top-right corner, small and discreet */}
+          {/* Elite Text Badge — top-right corner, clean typography */}
           {isElite && (
             <div className="absolute top-[15%] right-[10%] z-20">
-              <Crown className="w-4 h-4 text-violet-400 drop-shadow-[0_0_4px_rgba(139,92,246,0.6)]" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                ÉLITE
+              </span>
             </div>
           )}
 
@@ -108,7 +115,7 @@ export default function PlayerCard({ user }) {
 
           {/* 2. MIDDLE CONTENT: Left Stats + Player Tag | Right Photo */}
           <div className="relative flex justify-between items-center h-[42%] mt-1 px-4 z-10">
-            {/* Left side: vertical stats + player tag */}
+            {/* Left side: vertical stats */}
             <div className="flex flex-col items-center gap-1.5 bg-black/40 px-2.5 py-2 rounded-xl border border-white/10 backdrop-blur-sm shadow-lg">
               <div className="flex flex-col items-center">
                 <span className="text-xs font-black text-white leading-none">{playStyleShort}</span>
@@ -121,15 +128,6 @@ export default function PlayerCard({ user }) {
               </div>
               <div className="h-[1px] w-6 bg-white/20"></div>
               <span className="text-base leading-none">🇫🇷</span>
-              {/* Player Tag — discreet, stacked at the bottom of left column */}
-              {user.playerTag && (
-                <>
-                  <div className="h-[1px] w-6 bg-white/10"></div>
-                  <span className="text-[8px] font-mono font-medium text-zinc-500 tracking-wider leading-tight text-center max-w-[40px] break-all">
-                    {user.playerTag}
-                  </span>
-                </>
-              )}
             </div>
 
             {/* Right side: Photo container */}
@@ -217,6 +215,15 @@ export default function PlayerCard({ user }) {
                 </span>
               )}
             </div>
+
+            {/* Player ID — discreet serial number at card bottom */}
+            {user.playerTag && (
+              <div className="text-center mt-1">
+                <span className="text-[9px] font-mono text-zinc-600 tracking-wider">
+                  {user.playerTag}
+                </span>
+              </div>
+            )}
           </div>
 
         </div>
