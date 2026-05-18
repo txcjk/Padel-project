@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Zap, BarChart3, Crown, ShieldCheck, Infinity, X } from 'lucide-react';
 
 export default function PremiumSubscription({ onClose }) {
@@ -7,7 +8,7 @@ export default function PremiumSubscription({ onClose }) {
     {
       icon: <Infinity className="w-5 h-5 text-neon-lime" />,
       title: "Matchs Ranked Illimités :",
-      description: "Ne soyez plus limité à 3 matchs classés par semaine. Grimper dans le classement Elo n'attend pas."
+      description: "Ne soyez plus limité à 1 match classé par mois. Grimper dans le classement Elo n'attend pas."
     },
     {
       icon: <Zap className="w-5 h-5 text-neon-lime" />,
@@ -87,19 +88,19 @@ export default function PremiumSubscription({ onClose }) {
             {/* Annual Card */}
             <div 
               onClick={() => setSelectedPlan('annual')}
-              className={`relative p-6 rounded-2xl border-2 transition-all duration-300 cursor-pointer bg-zinc-900 overflow-hidden group hover:scale-[1.02] ${selectedPlan === 'annual' ? 'border-neon-violet shadow-[0_0_30px_rgba(168,85,247,0.25)]' : 'border-zinc-800 hover:border-neon-violet/50'}`}
+              className={`relative p-6 pt-8 rounded-2xl border-2 transition-all duration-300 cursor-pointer bg-zinc-900 group hover:scale-[1.02] ${selectedPlan === 'annual' ? 'border-neon-violet shadow-[0_0_30px_rgba(168,85,247,0.25)]' : 'border-zinc-800 hover:border-neon-violet/50'}`}
             >
-              {/* Highlight Banner */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-neon-violet-deep via-neon-violet to-neon-violet-deep" />
-              <div className="absolute top-4 right-4">
-                <span className="bg-neon-violet/20 border border-neon-violet/50 text-neon-violet text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full glow-violet">
-                  Le Choix des Pros
-                </span>
-              </div>
+              {/* Highlight Banner — top gradient line */}
+              <div className="absolute top-0 left-0 w-full h-1 rounded-t-2xl bg-gradient-to-r from-neon-violet-deep via-neon-violet to-neon-violet-deep" />
 
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-display font-bold text-xl text-zinc-100 uppercase tracking-wide">Annuel</h3>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedPlan === 'annual' ? 'border-neon-violet bg-neon-violet/20' : 'border-zinc-700'}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <h3 className="font-display font-bold text-xl text-zinc-100 uppercase tracking-wide">Annuel</h3>
+                  <span className="bg-neon-violet/20 border border-neon-violet/50 text-neon-violet text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full glow-violet whitespace-nowrap">
+                    Le Choix des Pros
+                  </span>
+                </div>
+                <div className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedPlan === 'annual' ? 'border-neon-violet bg-neon-violet/20' : 'border-zinc-700'}`}>
                   {selectedPlan === 'annual' && <div className="w-2.5 h-2.5 rounded-full bg-neon-violet" />}
                 </div>
               </div>

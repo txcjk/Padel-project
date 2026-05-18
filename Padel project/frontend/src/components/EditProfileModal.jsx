@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import PlayerCard from './PlayerCard';
-import { X, User, MapPin, Compass, Globe, Camera, Loader2, Save } from 'lucide-react';
+import AvatarUploadZone from './AvatarUploadZone';
+import { useAvatarUpload } from '../hooks/useAvatarUpload';
+import { X, MapPin, Compass, Globe, Save } from 'lucide-react';
 
 export default function EditProfileModal({ user, onClose, onSave }) {
   const [firstName, setFirstName] = useState(user.firstName || '');
@@ -13,59 +15,11 @@ export default function EditProfileModal({ user, onClose, onSave }) {
   const [playStyle, setPlayStyle] = useState(user.playStyle || 'Stratège');
   const [mainClub, setMainClub] = useState(user.club || '');
   
-  // Avatar states
-  const [avatarUrl, setAvatarUrl] = useState(user.avatar || '');
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarError, setAvatarError] = useState(null);
+  // Avatar upload hook
+  const avatar = useAvatarUpload(user.id, user.avatar);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const fileInputRef = useRef(null);
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const preview = URL.createObjectURL(file);
-    setAvatarPreview(preview);
-    setUploadingAvatar(true);
-    setAvatarError(null);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      // Upload to Supabase Storage bucket 'avatars'
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, {
-          upsert: true,
-          cacheControl: '3600'
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get Public URL
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(data.publicUrl);
-    } catch (err) {
-      console.error('Error uploading avatar:', err);
-      setAvatarError("Erreur lors du chargement de l'image. Veuillez réessayer.");
-      setAvatarPreview(null);
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,7 +43,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
           hand: dominantHand,
           play_style: playStyle,
           club: mainClub.trim(),
-          avatar_url: avatarUrl
+          avatar_url: avatar.avatarUrl
         })
         .eq('id', user.id);
 
@@ -104,7 +58,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
         club: mainClub.trim(),
         hand: dominantHand,
         playStyle: playStyle,
-        avatar: avatarUrl,
+        avatar: avatar.avatarUrl,
         playerTag: user.playerTag
       });
       onClose();
@@ -115,22 +69,22 @@ export default function EditProfileModal({ user, onClose, onSave }) {
     }
   };
 
-  // Live FIFA card preview object
-  const previewUser = {
+  // Live FIFA card preview object (memoized)
+  const previewUser = useMemo(() => ({
     firstName: firstName.trim() || 'Prénom',
     lastName: lastName.trim() || 'Nom',
     elo: user.elo || 1000,
     rank: user.rank || { label: 'Bronze', color: 'bronze' },
     playStyle: playStyle,
     hand: dominantHand,
-    avatar: avatarPreview || avatarUrl || null,
+    avatar: avatar.currentAvatar,
     club: mainClub.trim() || 'Mon Club Principal',
     playerTag: user.playerTag || '',
     globalRank: user.globalRank || 12,
     fairPlay: user.fairPlay || 100,
     punctuality: user.punctuality || 100,
     matchesSaved: user.matchesSaved || 0
-  };
+  }), [firstName, lastName, user.elo, user.rank, playStyle, dominantHand, avatar.currentAvatar, mainClub, user.playerTag, user.globalRank, user.fairPlay, user.punctuality, user.matchesSaved]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in font-sans">
@@ -189,55 +143,15 @@ export default function EditProfileModal({ user, onClose, onSave }) {
             <form onSubmit={handleSubmit} className="space-y-4">
               
               {/* Avatar Zone inside Form */}
-              <div className="flex flex-col items-center py-1">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleAvatarChange}
-                  accept="image/*"
-                  className="hidden"
-                />
-                
-                <div 
-                  onClick={handleAvatarClick}
-                  className="relative w-20 h-20 rounded-full border-2 border-dashed border-zinc-800 hover:border-neon-violet bg-zinc-950/60 transition-all duration-300 flex items-center justify-center cursor-pointer group overflow-hidden shadow-inner focus:outline-none"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-neon-violet/0 to-neon-violet/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {previewUser.avatar ? (
-                    <>
-                      <img 
-                        src={previewUser.avatar} 
-                        alt="Avatar Preview" 
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-0.5">
-                        <Camera className="w-4 h-4 text-neon-violet" />
-                        <span className="text-[8px] uppercase tracking-wider font-bold text-zinc-300">Modifier</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-center p-2 space-y-1 select-none">
-                      <User className="w-4 h-4 text-zinc-500 group-hover:text-neon-violet transition-colors" />
-                      <span className="text-[7px] font-black uppercase tracking-wider text-zinc-500 group-hover:text-neon-violet transition-colors leading-none">
-                        Ajouter
-                      </span>
-                    </div>
-                  )}
-
-                  {uploadingAvatar && (
-                    <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 text-neon-violet animate-spin" />
-                    </div>
-                  )}
-                </div>
-
-                {avatarError && (
-                  <span className="text-[9px] text-red-400 font-semibold mt-1.5 text-center">
-                    {avatarError}
-                  </span>
-                )}
-              </div>
+              <AvatarUploadZone
+                avatar={avatar.currentAvatar}
+                uploading={avatar.uploading}
+                error={avatar.error}
+                onAvatarClick={avatar.handleClick}
+                fileInputRef={avatar.fileInputRef}
+                onFileChange={avatar.handleFileChange}
+                size="md"
+              />
 
               {/* Identity Row */}
               <div className="grid grid-cols-2 gap-3">

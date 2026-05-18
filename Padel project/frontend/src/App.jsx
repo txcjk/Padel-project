@@ -15,6 +15,8 @@ import CGU from './components/CGU.jsx'
 import PremiumSubscription from './components/PremiumSubscription.jsx'
 import OnboardingForm from './components/OnboardingForm.jsx'
 import EditProfileModal from './components/EditProfileModal.jsx'
+import ProStats from './components/ProStats.jsx'
+import RankedLimitModal from './components/RankedLimitModal.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -156,6 +158,10 @@ export default function App() {
   const [showCGU, setShowCGU] = useState(false)
   const [showPremium, setShowPremium] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
+  const [showRankedLimit, setShowRankedLimit] = useState(false)
+
+  // Elite status — TODO: connect to real subscription logic
+  const isElite = userProfile?.isElite || false
 
   // Listen to Auth changes
   useEffect(() => {
@@ -303,27 +309,12 @@ export default function App() {
 
   const fetchUrgentMatches = async (userId) => {
     try {
-      // Utilise la fonction SQL qui filtre par rayon géographique côté serveur
+      // RPC optimisé : inclut directement le COUNT des participants
       const { data, error } = await supabase
         .rpc('find_last_urgent_matches', { p_user_id: userId })
 
       if (error) throw error
       if (data && data.length > 0) {
-        const matchIds = data.map(m => m.id)
-        
-        // Récupérer dynamiquement le nombre de participants pour chaque match urgent
-        const { data: participations, error: partError } = await supabase
-          .from('match_participations')
-          .select('match_id')
-          .in('match_id', matchIds)
-          
-        if (partError) throw partError
-        
-        const counts = {}
-        participations.forEach(p => {
-          counts[p.match_id] = (counts[p.match_id] || 0) + 1
-        })
-
         const mapped = data.map(m => {
           const dateObj = new Date(m.scheduled_at)
           const isToday = dateObj.toDateString() === new Date().toDateString()
@@ -333,7 +324,7 @@ export default function App() {
             time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             date: isToday ? "Aujourd'hui" : dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
             eloRequired: `${m.elo_min ?? 800}-${m.elo_max ?? 2000}`,
-            playersJoined: counts[m.id] || 0,
+            playersJoined: Number(m.participant_count) || 0,
             playersNeeded: 4,
           }
         })
@@ -422,10 +413,37 @@ export default function App() {
   // --- Real Interactions (Supabase-Connected) ---
 
   const handleSaveMatch = async (matchId) => {
+    // --- Ranked match limit check for non-Elite users ---
+    const targetMatch = urgentMatches.find(m => m.id === matchId)
+    if (targetMatch?.type === 'Ranked' && !isElite) {
+      // Count ranked matches this month
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const rankedThisMonth = recentMatches.filter(m => {
+        if (m.type !== 'Ranked') return false
+        // Parse match date
+        const matchDate = new Date(m.rawDate || m.date)
+        return matchDate >= new Date(startOfMonth)
+      }).length
+
+      if (rankedThisMonth >= 1) {
+        setShowRankedLimit(true)
+        return
+      }
+    }
+
     if (isDemo) {
+      // Same ranked check for demo mode
+      if (targetMatch?.type === 'Ranked' && !isElite) {
+        const rankedDemoCount = recentMatches.filter(m => m.type === 'Ranked').length
+        if (rankedDemoCount >= 1) {
+          setShowRankedLimit(true)
+          return
+        }
+      }
       setUrgentMatches(prev => prev.filter(m => m.id !== matchId))
       setUserProfile(prev => ({ ...prev, matchesSaved: prev.matchesSaved + 1 }))
-      setShowGLHFNudge(true) // Trigger GLHF when match is fully accepted/joined
+      setShowGLHFNudge(true)
       alert("Félicitations ! Vous avez sauvé le match en Mode Démo.")
       return
     }
@@ -603,12 +621,9 @@ export default function App() {
 
     try {
       setLoading(true)
-      // Valider le match en changeant le statut en 'Completed'.
-      // Le trigger SQL s'occupe de mettre à jour les ELOs de chacun.
-      const { error } = await supabase
-        .from('matches')
-        .update({ status: 'Completed' })
-        .eq('id', matchId)
+      // Validation atomique via RPC : calcule ELO, stocke elo_change, passe en Completed
+      const { data, error } = await supabase
+        .rpc('complete_match', { p_match_id: matchId })
 
       if (error) throw error
 
@@ -616,7 +631,7 @@ export default function App() {
       await loadSupabaseData(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de la validation du match :", err.message)
-      alert(`Impossible de valider le score : ${err.message}`)
+      alert(`Impossible d'valider le score : ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -639,20 +654,16 @@ export default function App() {
 
     try {
       setLoading(true)
-      // Litige : réinitialise les scores et remet le match en statut 'Full' pour re-saisie consensuelle
-      const { error } = await supabase
-        .from('matches')
-        .update({
-          score_team_1: null,
-          score_team_2: null,
-          status: 'Full'
-        })
-        .eq('id', matchId)
+      // Litige atomique : revert ELO + statut Disputed via RPC
+      const { data, error } = await supabase
+        .rpc('dispute_match', { p_match_id: matchId })
 
       if (error) throw error
 
-      alert("Contestation enregistrée ! Les scores ont été réinitialisés pour permettre une nouvelle saisie consensuelle.")
-      await fetchRecentMatches(userProfile.id)
+      alert("Contestation enregistrée ! Les ELO ont été rétablis et le match est en arbitrage.")
+      
+      // Recharger les données pour refléter les changements ELO
+      await loadSupabaseData(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de la contestation :", err.message)
       alert(`Impossible d'enregistrer la contestation : ${err.message}`)
@@ -799,6 +810,15 @@ export default function App() {
         <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
           <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} />
         </section>
+
+        <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.5s' }}>
+          <ProStats 
+            user={userProfile} 
+            matches={recentMatches} 
+            isElite={isElite} 
+            onUpgrade={() => setShowPremium(true)} 
+          />
+        </section>
       </main>
 
       {/* Dynamic Modals */}
@@ -857,6 +877,13 @@ export default function App() {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-zinc-950/95 backdrop-blur-md animate-fade-in">
           <PremiumSubscription onClose={() => setShowPremium(false)} />
         </div>
+      )}
+
+      {showRankedLimit && (
+        <RankedLimitModal 
+          onClose={() => setShowRankedLimit(false)} 
+          onUpgrade={() => { setShowRankedLimit(false); setShowPremium(true); }} 
+        />
       )}
 
       {showEditProfile && (

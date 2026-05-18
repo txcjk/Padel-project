@@ -86,7 +86,7 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
             <EloRankBadge elo={user.elo} rank={user.rank} />
 
             {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group" id="notifications-btn">
+            <button className="relative p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group" id="notifications-btn" aria-label="Notifications">
               <Bell className="w-5 h-5 text-zinc-400 group-hover:text-zinc-200 transition-colors" />
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-neon-violet rounded-full border-2 border-zinc-950 animate-pulse" />
             </button>
@@ -95,6 +95,7 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
             <button 
               onClick={onProfileClick}
               className="flex items-center gap-3 pl-3 border-l border-zinc-800/60 hover:opacity-80 transition-opacity text-left focus:outline-none cursor-pointer"
+              aria-label="Modifier le profil"
             >
               <UserAvatar firstName={user.firstName} lastName={user.lastName} avatar={user.avatar} />
               <div className="hidden lg:flex flex-col">
@@ -114,6 +115,7 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
               onClick={onLogout}
               className="p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group cursor-pointer" 
               id="logout-btn"
+              aria-label="Se déconnecter"
             >
               <LogOut className="w-4 h-4 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
             </button>
@@ -124,6 +126,7 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
             className="md:hidden p-2 rounded-lg hover:bg-zinc-800/60"
             onClick={() => setMobileOpen(!mobileOpen)}
             id="mobile-menu-btn"
+            aria-label={mobileOpen ? "Fermer le menu" : "Ouvrir le menu"}
           >
             {mobileOpen ? <X className="w-5 h-5 text-zinc-300" /> : <Menu className="w-5 h-5 text-zinc-300" />}
           </button>

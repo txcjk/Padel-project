@@ -1,0 +1,460 @@
+- generic [ref=e58]:
+  - banner [ref=e59]:
+    - generic [ref=e61]:
+      - generic [ref=e62]:
+        - img [ref=e64]
+        - generic [ref=e66]:
+          - generic [ref=e67]: elomatch
+          - generic [ref=e68]: Competitive Hub
+      - generic [ref=e69]:
+        - button "Devenir Élite" [ref=e70] [cursor=pointer]:
+          - img [ref=e71]
+          - generic [ref=e73]: Devenir Élite
+        - generic [ref=e74]:
+          - img [ref=e75]
+          - generic [ref=e81]: 1420 Elo
+          - generic [ref=e82]: •
+          - generic [ref=e83]: Or
+        - button "Notifications" [ref=e84]:
+          - img [ref=e85]
+        - button "Modifier le profil" [ref=e89] [cursor=pointer]:
+          - generic [ref=e91]: AD
+        - button "Se déconnecter" [ref=e93] [cursor=pointer]:
+          - img [ref=e94]
+  - main [ref=e97]:
+    - generic [ref=e100]:
+      - generic [ref=e101]:
+        - img [ref=e103]
+        - generic [ref=e105]:
+          - generic [ref=e106]: Validation de Score Requise
+          - paragraph [ref=e107]:
+            - text: Un score de
+            - strong [ref=e108]: 6-4 / 6-2
+            - text: a été proposé pour votre match au
+            - strong [ref=e109]: Padel Touch Arcachon
+            - text: .
+      - generic [ref=e110]:
+        - button "Confirmer" [ref=e111] [cursor=pointer]:
+          - img [ref=e112]
+          - text: Confirmer
+        - button "Contester" [ref=e114] [cursor=pointer]:
+          - img [ref=e115]
+          - text: Contester
+    - generic [ref=e121]:
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - img [ref=e125]
+          - generic [ref=e127]:
+            - heading "ALERTE LAST" [level=2] [ref=e128]
+            - generic [ref=e129]:
+              - img [ref=e130]
+              - generic [ref=e133]: 1 match dans les 2 prochaines heures
+        - generic [ref=e134]:
+          - img [ref=e135]
+          - text: Sauveur Argent — 7 matchs
+      - generic [ref=e139]:
+        - generic [ref=e141]:
+          - generic [ref=e142]: 21:00
+          - generic [ref=e143]: Aujourd'hui
+        - generic [ref=e144]:
+          - generic [ref=e145]:
+            - img [ref=e146]
+            - generic [ref=e149]: Padel Touch Arcachon
+          - generic [ref=e150]:
+            - generic [ref=e151]:
+              - img [ref=e152]
+              - generic [ref=e154]: Elo 1300-1500
+            - generic [ref=e155]:
+              - img [ref=e156]
+              - generic [ref=e161]: 3/4
+        - button "SAUVER LE MATCH" [ref=e162] [cursor=pointer]:
+          - img [ref=e163]
+          - text: SAUVER LE MATCH
+          - img [ref=e165]
+    - generic [ref=e167]:
+      - generic [ref=e171]:
+        - generic [ref=e172]:
+          - generic [ref=e173]: "1420"
+          - generic [ref=e174]: Or
+        - generic [ref=e175]:
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - generic [ref=e178]: ATT
+              - generic [ref=e179]: POS
+            - generic [ref=e181]:
+              - generic [ref=e182]: D
+              - generic [ref=e183]: MAIN
+            - generic [ref=e185]: 🇫🇷
+          - generic [ref=e189]: AD
+        - generic [ref=e190]:
+          - heading "Alexandre (Démo) Dupont" [level=2] [ref=e191]
+          - generic [ref=e192]:
+            - generic [ref=e193]: 🏟️
+            - generic [ref=e194]: 4Padels Bordeaux
+        - generic [ref=e195]:
+          - generic [ref=e197]:
+            - generic [ref=e198]:
+              - generic [ref=e199]: "1420"
+              - generic [ref=e200]: Score Elo
+            - generic [ref=e201]:
+              - generic [ref=e202]: 94%
+              - generic [ref=e203]: Fair-Play
+            - generic [ref=e204]:
+              - generic [ref=e205]: 97%
+              - generic [ref=e206]: Ponctuel
+            - generic [ref=e207]:
+              - generic [ref=e208]: "7"
+              - generic [ref=e209]: Sauvetages
+          - generic [ref=e211]:
+            - img [ref=e212]
+            - generic [ref=e214]: "#1 Général"
+      - generic [ref=e216]:
+        - generic [ref=e217]:
+          - heading "Matchs Actifs" [level=2] [ref=e219]: Matchs Actifs
+          - generic [ref=e222]:
+            - generic [ref=e224]:
+              - img [ref=e226]
+              - generic [ref=e232]:
+                - generic [ref=e233]:
+                  - generic [ref=e234]: 4Padels Bordeaux
+                  - generic [ref=e235]: Ranked
+                  - generic [ref=e236]: EN COURS
+                - generic [ref=e237]:
+                  - img [ref=e238]
+                  - generic [ref=e241]: Aujourd'hui • 20:00
+            - generic [ref=e242]:
+              - button "Saisir le score" [ref=e243] [cursor=pointer]
+              - button "Annuler" [ref=e244] [cursor=pointer]
+        - generic [ref=e245]:
+          - generic [ref=e246]:
+            - heading "Historique" [level=2] [ref=e247]
+            - generic [ref=e248]: 2 matchs
+          - generic [ref=e249]:
+            - generic [ref=e250]:
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - img [ref=e254]
+                  - generic [ref=e260]:
+                    - generic [ref=e261]:
+                      - generic [ref=e262]: Padel Touch Arcachon
+                      - generic [ref=e263]: Ranked
+                      - generic [ref=e264]: ATTENTE VALIDATION
+                    - generic [ref=e265]:
+                      - img [ref=e266]
+                      - generic [ref=e269]: Aujourd'hui • 18:00
+                - generic [ref=e270]:
+                  - img [ref=e271]
+                  - text: Amical
+              - generic [ref=e272]:
+                - generic [ref=e273]:
+                  - paragraph [ref=e274]: Équipe 1
+                  - paragraph [ref=e275]: 6-4 / 6-2
+                - generic [ref=e276]: VS
+                - generic [ref=e277]:
+                  - paragraph [ref=e278]: Équipe 2
+                  - paragraph [ref=e279]: 4-6 / 2-6
+            - generic [ref=e280]:
+              - generic [ref=e281]:
+                - generic [ref=e282]:
+                  - img [ref=e284]
+                  - generic [ref=e290]:
+                    - generic [ref=e291]:
+                      - generic [ref=e292]: 4Padels Bordeaux
+                      - generic [ref=e293]: Ranked
+                    - generic [ref=e294]:
+                      - img [ref=e295]
+                      - generic [ref=e298]: 16 Mai 2026 • 19:00
+                - generic [ref=e299]:
+                  - img [ref=e300]
+                  - text: "+18"
+              - generic [ref=e303]:
+                - generic [ref=e304]:
+                  - paragraph [ref=e305]: Équipe 1
+                  - paragraph [ref=e306]: 6-4 / 6-3
+                - generic [ref=e307]: VS
+                - generic [ref=e308]:
+                  - paragraph [ref=e309]: Équipe 2
+                  - paragraph [ref=e310]: 4-6 / 3-6
+              - button "NOTER LES JOUEURS" [ref=e311] [cursor=pointer]:
+                - img [ref=e312]
+                - text: NOTER LES JOUEURS
+    - generic [ref=e315]:
+      - generic [ref=e316]:
+        - generic [ref=e317]:
+          - img [ref=e319]
+          - generic [ref=e325]:
+            - heading "CLASSEMENT ARENA" [level=2] [ref=e326]
+            - paragraph [ref=e327]: Top Joueurs Padel
+        - generic [ref=e328]:
+          - button "Général" [ref=e329]
+          - button "Par Région" [ref=e330]
+          - button "Par Club" [ref=e331]
+      - generic [ref=e332]:
+        - generic [ref=e333]: Pos
+        - generic [ref=e334]: Joueur
+        - generic [ref=e335]: Score Elo
+        - generic [ref=e336]: Win %
+        - generic [ref=e337]: Club
+      - generic [ref=e338]:
+        - button "Voir le profil de Arthur Durand" [ref=e339] [cursor=pointer]:
+          - img [ref=e341]
+          - generic [ref=e343]:
+            - generic [ref=e344]: AD
+            - paragraph [ref=e346]: Arthur Durand
+          - generic [ref=e347]:
+            - generic [ref=e348]: "1867"
+            - generic [ref=e349]: Diamant
+          - generic [ref=e351]: 71%
+          - generic [ref=e352]:
+            - img [ref=e353]
+            - generic [ref=e356]: 4Padels Bordeaux
+        - button "Voir le profil de Louis Martin" [ref=e357] [cursor=pointer]:
+          - img [ref=e359]
+          - generic [ref=e365]:
+            - generic [ref=e366]: LM
+            - paragraph [ref=e368]: Louis Martin
+          - generic [ref=e369]:
+            - generic [ref=e370]: "1780"
+            - generic [ref=e371]: Platine
+          - generic [ref=e373]: 51%
+          - generic [ref=e374]:
+            - img [ref=e375]
+            - generic [ref=e378]: Padel Touch Arcachon
+        - button "Voir le profil de Alice Thomas" [ref=e379] [cursor=pointer]:
+          - img [ref=e381]
+          - generic [ref=e387]:
+            - generic [ref=e388]: AT
+            - paragraph [ref=e390]: Alice Thomas
+          - generic [ref=e391]:
+            - generic [ref=e392]: "1710"
+            - generic [ref=e393]: Platine
+          - generic [ref=e395]: 42%
+          - generic [ref=e396]:
+            - img [ref=e397]
+            - generic [ref=e400]: Padel Touch Arcachon
+        - button "Voir le profil de Alice Thomas" [ref=e401] [cursor=pointer]:
+          - generic [ref=e403]: "4"
+          - generic [ref=e404]:
+            - generic [ref=e405]: AT
+            - paragraph [ref=e407]: Alice Thomas
+          - generic [ref=e408]:
+            - generic [ref=e409]: "1663"
+            - generic [ref=e410]: Platine
+          - generic [ref=e412]: 68%
+          - generic [ref=e413]:
+            - img [ref=e414]
+            - generic [ref=e417]: Casa Padel Paris
+        - button "Voir le profil de Jules Moreau" [ref=e418] [cursor=pointer]:
+          - generic [ref=e420]: "5"
+          - generic [ref=e421]:
+            - generic [ref=e422]: JM
+            - paragraph [ref=e424]: Jules Moreau
+          - generic [ref=e425]:
+            - generic [ref=e426]: "1629"
+            - generic [ref=e427]: Platine
+          - generic [ref=e429]: 73%
+          - generic [ref=e430]:
+            - img [ref=e431]
+            - generic [ref=e434]: 4Padels Bordeaux
+        - button "Voir le profil de Gabriel Laurent" [ref=e435] [cursor=pointer]:
+          - generic [ref=e437]: "6"
+          - generic [ref=e438]:
+            - generic [ref=e439]: GL
+            - paragraph [ref=e441]: Gabriel Laurent
+          - generic [ref=e442]:
+            - generic [ref=e443]: "1590"
+            - generic [ref=e444]: Platine
+          - generic [ref=e446]: 60%
+          - generic [ref=e447]:
+            - img [ref=e448]
+            - generic [ref=e451]: Big Padel Jet Sports
+        - button "Voir le profil de Louise Laurent" [ref=e452] [cursor=pointer]:
+          - generic [ref=e454]: "7"
+          - generic [ref=e455]:
+            - generic [ref=e456]: LL
+            - paragraph [ref=e458]: Louise Laurent
+          - generic [ref=e459]:
+            - generic [ref=e460]: "1575"
+            - generic [ref=e461]: Platine
+          - generic [ref=e463]: 64%
+          - generic [ref=e464]:
+            - img [ref=e465]
+            - generic [ref=e468]: Padel Arena Rouen
+        - button "Voir le profil de Louis Thomas" [ref=e469] [cursor=pointer]:
+          - generic [ref=e471]: "8"
+          - generic [ref=e472]:
+            - generic [ref=e473]: LT
+            - paragraph [ref=e475]: Louis Thomas
+          - generic [ref=e476]:
+            - generic [ref=e477]: "1572"
+            - generic [ref=e478]: Platine
+          - generic [ref=e480]: 69%
+          - generic [ref=e481]:
+            - img [ref=e482]
+            - generic [ref=e485]: 4Padels Bordeaux
+        - button "Voir le profil de Alexandre (Démo) Dupont" [ref=e486] [cursor=pointer]:
+          - generic [ref=e488]: "9"
+          - generic [ref=e489]:
+            - generic [ref=e490]: AD
+            - generic [ref=e491]:
+              - paragraph [ref=e492]: Alexandre (Démo) Dupont
+              - text: Vous
+          - generic [ref=e493]:
+            - generic [ref=e494]: "1420"
+            - generic [ref=e495]: Or
+          - generic [ref=e497]: "%"
+          - generic [ref=e498]:
+            - img [ref=e499]
+            - generic [ref=e502]: 4Padels Bordeaux
+        - button "Voir le profil de Louis Bernard" [ref=e503] [cursor=pointer]:
+          - generic [ref=e505]: "10"
+          - generic [ref=e506]:
+            - generic [ref=e507]: LB
+            - paragraph [ref=e509]: Louis Bernard
+          - generic [ref=e510]:
+            - generic [ref=e511]: "1367"
+            - generic [ref=e512]: Or
+          - generic [ref=e514]: 45%
+          - generic [ref=e515]:
+            - img [ref=e516]
+            - generic [ref=e519]: Padel Arena Rouen
+        - button "Voir le profil de Louise Bernard" [ref=e520] [cursor=pointer]:
+          - generic [ref=e522]: "11"
+          - generic [ref=e523]:
+            - generic [ref=e524]: LB
+            - paragraph [ref=e526]: Louise Bernard
+          - generic [ref=e527]:
+            - generic [ref=e528]: "1322"
+            - generic [ref=e529]: Or
+          - generic [ref=e531]: 65%
+          - generic [ref=e532]:
+            - img [ref=e533]
+            - generic [ref=e536]: Padel Arena Rouen
+        - button "Voir le profil de Hugo Richard" [ref=e537] [cursor=pointer]:
+          - generic [ref=e539]: "12"
+          - generic [ref=e540]:
+            - generic [ref=e541]: HR
+            - paragraph [ref=e543]: Hugo Richard
+          - generic [ref=e544]:
+            - generic [ref=e545]: "1299"
+            - generic [ref=e546]: Or
+          - generic [ref=e548]: 67%
+          - generic [ref=e549]:
+            - img [ref=e550]
+            - generic [ref=e553]: Padel Arena Rouen
+        - button "Voir le profil de Louise Martin" [ref=e554] [cursor=pointer]:
+          - generic [ref=e556]: "13"
+          - generic [ref=e557]:
+            - generic [ref=e558]: LM
+            - paragraph [ref=e560]: Louise Martin
+          - generic [ref=e561]:
+            - generic [ref=e562]: "1211"
+            - generic [ref=e563]: Or
+          - generic [ref=e565]: 42%
+          - generic [ref=e566]:
+            - img [ref=e567]
+            - generic [ref=e570]: Padel Touch Arcachon
+        - button "Voir le profil de Louis Laurent" [ref=e571] [cursor=pointer]:
+          - generic [ref=e573]: "14"
+          - generic [ref=e574]:
+            - generic [ref=e575]: LL
+            - paragraph [ref=e577]: Louis Laurent
+          - generic [ref=e578]:
+            - generic [ref=e579]: "1211"
+            - generic [ref=e580]: Or
+          - generic [ref=e582]: 74%
+          - generic [ref=e583]:
+            - img [ref=e584]
+            - generic [ref=e587]: Padel Arena Rouen
+        - button "Voir le profil de Jade Martin" [ref=e588] [cursor=pointer]:
+          - generic [ref=e590]: "15"
+          - generic [ref=e591]:
+            - generic [ref=e592]: JM
+            - paragraph [ref=e594]: Jade Martin
+          - generic [ref=e595]:
+            - generic [ref=e596]: "1100"
+            - generic [ref=e597]: Argent
+          - generic [ref=e599]: 44%
+          - generic [ref=e600]:
+            - img [ref=e601]
+            - generic [ref=e604]: 4Padels Bordeaux
+        - button "Voir le profil de Lina Moreau" [ref=e605] [cursor=pointer]:
+          - generic [ref=e607]: "16"
+          - generic [ref=e608]:
+            - generic [ref=e609]: LM
+            - paragraph [ref=e611]: Lina Moreau
+          - generic [ref=e612]:
+            - generic [ref=e613]: "1073"
+            - generic [ref=e614]: Argent
+          - generic [ref=e616]: 69%
+          - generic [ref=e617]:
+            - img [ref=e618]
+            - generic [ref=e621]: Big Padel Jet Sports
+        - button "Voir le profil de Lina Dubois" [ref=e622] [cursor=pointer]:
+          - generic [ref=e624]: "17"
+          - generic [ref=e625]:
+            - generic [ref=e626]: LD
+            - paragraph [ref=e628]: Lina Dubois
+          - generic [ref=e629]:
+            - generic [ref=e630]: "1035"
+            - generic [ref=e631]: Argent
+          - generic [ref=e633]: 67%
+          - generic [ref=e634]:
+            - img [ref=e635]
+            - generic [ref=e638]: Casa Padel Paris
+        - button "Voir le profil de Léo Bernard" [ref=e639] [cursor=pointer]:
+          - generic [ref=e641]: "18"
+          - generic [ref=e642]:
+            - generic [ref=e643]: LB
+            - paragraph [ref=e645]: Léo Bernard
+          - generic [ref=e646]:
+            - generic [ref=e647]: "954"
+            - generic [ref=e648]: Argent
+          - generic [ref=e650]: 63%
+          - generic [ref=e651]:
+            - img [ref=e652]
+            - generic [ref=e655]: 4Padels Bordeaux
+        - button "Voir le profil de Arthur Laurent" [ref=e656] [cursor=pointer]:
+          - generic [ref=e658]: "19"
+          - generic [ref=e659]:
+            - generic [ref=e660]: AL
+            - paragraph [ref=e662]: Arthur Laurent
+          - generic [ref=e663]:
+            - generic [ref=e664]: "848"
+            - generic [ref=e665]: Bronze
+          - generic [ref=e667]: 50%
+          - generic [ref=e668]:
+            - img [ref=e669]
+            - generic [ref=e672]: Padel Touch Arcachon
+        - button "Voir le profil de Emma Moreau" [ref=e673] [cursor=pointer]:
+          - generic [ref=e675]: "20"
+          - generic [ref=e676]:
+            - generic [ref=e677]: EM
+            - paragraph [ref=e679]: Emma Moreau
+          - generic [ref=e680]:
+            - generic [ref=e681]: "838"
+            - generic [ref=e682]: Bronze
+          - generic [ref=e684]: 66%
+          - generic [ref=e685]:
+            - img [ref=e686]
+            - generic [ref=e689]: Padel Arena Rouen
+        - button "Voir le profil de Emma Bernard" [ref=e690] [cursor=pointer]:
+          - generic [ref=e692]: "21"
+          - generic [ref=e693]:
+            - generic [ref=e694]: EB
+            - paragraph [ref=e696]: Emma Bernard
+          - generic [ref=e697]:
+            - generic [ref=e698]: "813"
+            - generic [ref=e699]: Bronze
+          - generic [ref=e701]: 51%
+          - generic [ref=e702]:
+            - img [ref=e703]
+            - generic [ref=e706]: Casa Padel Paris
+  - contentinfo [ref=e707]:
+    - generic [ref=e708]:
+      - paragraph [ref=e709]: © 2026 elomatch. Tous droits réservés.
+      - paragraph [ref=e710]:
+        - text: "Un problème ? Une idée ? Contactez le support :"
+        - link "ludow3b@gmail.com" [ref=e711] [cursor=pointer]:
+          - /url: mailto:ludow3b@gmail.com
+      - button "Conditions Générales d'Utilisation (CGU)" [ref=e712] [cursor=pointer]

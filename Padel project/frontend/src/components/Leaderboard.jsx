@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Trophy, MapPin, Swords, Medal, Crown } from 'lucide-react'
 
 const getTierStyle = (tierColor) => {
@@ -26,8 +26,8 @@ const getTierTextGlow = (tierColor) => {
 export default function Leaderboard({ players, currentUser, onSelectPlayer }) {
   const [activeTab, setActiveTab] = useState('Général')
 
-  // Sort and filter players
-  const filteredPlayers = players.filter(p => {
+  // Sort and filter players (memoized)
+  const filteredPlayers = useMemo(() => players.filter(p => {
     if (activeTab === 'Par Région' && currentUser?.region) {
       return p.region === currentUser.region
     }
@@ -35,7 +35,7 @@ export default function Leaderboard({ players, currentUser, onSelectPlayer }) {
       return p.club === currentUser.club
     }
     return true
-  }).sort((a, b) => b.elo - a.elo)
+  }).sort((a, b) => b.elo - a.elo), [players, activeTab, currentUser])
 
   return (
     <div className="rounded-2xl bg-zinc-900/80 border border-zinc-800/60 overflow-hidden backdrop-blur-sm flex flex-col h-[600px]">
@@ -99,8 +99,12 @@ export default function Leaderboard({ players, currentUser, onSelectPlayer }) {
             return (
               <div
                 key={player.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => onSelectPlayer && onSelectPlayer({ ...player, globalRank: index + 1 })}
-                className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl border transition-all duration-300 hover:bg-zinc-800/80 cursor-pointer hover:scale-[1.01] ${
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectPlayer && onSelectPlayer({ ...player, globalRank: index + 1 }); }}}
+                aria-label={`Voir le profil de ${player.firstName} ${player.lastName}`}
+                className={`grid grid-cols-12 gap-4 items-center px-4 py-3 rounded-xl border transition-all duration-300 hover:bg-zinc-800/80 cursor-pointer hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-neon-violet/50 ${
                   isTop1 ? 'bg-gradient-to-r from-[#ffd700]/10 to-transparent border-[#ffd700]/30 shadow-[inset_0_0_20px_rgba(255,215,0,0.05)]' :
                   isTop2 ? 'bg-gradient-to-r from-[#c0c0c0]/10 to-transparent border-[#c0c0c0]/20' :
                   isTop3 ? 'bg-gradient-to-r from-[#cd7f32]/10 to-transparent border-[#cd7f32]/20' :

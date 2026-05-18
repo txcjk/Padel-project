@@ -1,7 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import PlayerCard from './PlayerCard';
-import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, User, Camera, Loader2, Globe } from 'lucide-react';
+import AvatarUploadZone from './AvatarUploadZone';
+import { useAvatarUpload } from '../hooks/useAvatarUpload';
+import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, Globe } from 'lucide-react';
 
 export default function OnboardingForm({ user, onComplete }) {
   const [firstName, setFirstName] = useState('');
@@ -12,78 +14,30 @@ export default function OnboardingForm({ user, onComplete }) {
   const [playStyle, setPlayStyle] = useState('Stratège');
   const [mainClub, setMainClub] = useState('');
   const [country, setCountry] = useState('France');
-  const [playerTag, setPlayerTag] = useState(user?.playerTag || '');
+  
+  // Ref stable pour le numéro aléatoire — ne change pas à chaque render
+  const tagNumberRef = useRef(Math.floor(Math.random() * 9000) + 1000);
+  const prevFirstNameRef = useRef('');
 
-  // Stable generate user playerTag when first name changes
-  useEffect(() => {
-    if (user?.playerTag) {
-      setPlayerTag(user.playerTag);
-      return;
+  // Génération stable du playerTag — dépend uniquement de firstName et user
+  const playerTag = useMemo(() => {
+    // Si l'utilisateur a déjà un tag, l'utiliser
+    if (user?.playerTag) return user.playerTag;
+    // Si pas de prénom, pas de tag
+    if (!firstName.trim()) return '';
+    // Si le prénom change, régénérer le numéro
+    if (firstName.trim() !== prevFirstNameRef.current) {
+      tagNumberRef.current = Math.floor(Math.random() * 9000) + 1000;
+      prevFirstNameRef.current = firstName.trim();
     }
-    if (firstName.trim()) {
-      if (!playerTag || !playerTag.startsWith(firstName.trim())) {
-        const rand = Math.floor(Math.random() * 9000) + 1000;
-        setPlayerTag(`${firstName.trim()}#${rand}`);
-      }
-    } else {
-      setPlayerTag('');
-    }
+    return `${firstName.trim()}#${tagNumberRef.current}`;
   }, [firstName, user?.playerTag]);
   
-  // Avatar states
-  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
-  const [avatarPreview, setAvatarPreview] = useState(null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [avatarError, setAvatarError] = useState(null);
+  // Avatar upload hook
+  const avatar = useAvatarUpload(user?.id, user?.avatar_url);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const fileInputRef = useRef(null);
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Instant local preview for premium visual feedback on the FIFA card
-    const preview = URL.createObjectURL(file);
-    setAvatarPreview(preview);
-    setUploadingAvatar(true);
-    setAvatarError(null);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar-${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
-
-      // Upload to Supabase 'avatars' Storage Bucket
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, {
-          upsert: true,
-          cacheControl: '3600'
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setAvatarUrl(data.publicUrl);
-    } catch (err) {
-      console.error('Error uploading avatar:', err);
-      setAvatarError("Erreur lors du chargement de l'image. Veuillez réessayer.");
-      setAvatarPreview(null);
-    } finally {
-      setUploadingAvatar(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,7 +61,7 @@ export default function OnboardingForm({ user, onComplete }) {
           hand: dominantHand,
           play_style: playStyle,
           club: mainClub.trim(),
-          avatar_url: avatarUrl,
+          avatar_url: avatar.avatarUrl,
           player_tag: playerTag,
           elo_rating: 1000,
           fair_play_score: 100,
@@ -127,7 +81,7 @@ export default function OnboardingForm({ user, onComplete }) {
         club: mainClub.trim(),
         hand: dominantHand,
         playStyle: playStyle,
-        avatar: avatarUrl,
+        avatar: avatar.avatarUrl,
         playerTag: playerTag,
         elo: 1000,
         rank: { label: 'Bronze', color: 'bronze' },
@@ -142,15 +96,15 @@ export default function OnboardingForm({ user, onComplete }) {
     }
   };
 
-  // Preview object passed to the Fifa-style PlayerCard
-  const previewUser = {
+  // Preview object passed to the Fifa-style PlayerCard (memoized)
+  const previewUser = useMemo(() => ({
     firstName: firstName.trim() || 'Prénom',
     lastName: lastName.trim() || 'Nom',
     elo: 1000,
     rank: { label: 'Bronze', color: 'bronze' },
     playStyle: playStyle,
     hand: dominantHand,
-    avatar: avatarPreview || avatarUrl || null,
+    avatar: avatar.currentAvatar,
     club: mainClub.trim() || 'Mon Club Principal',
     country: country.trim(),
     playerTag: playerTag,
@@ -158,7 +112,7 @@ export default function OnboardingForm({ user, onComplete }) {
     fairPlay: 100,
     punctuality: 100,
     matchesSaved: 0
-  };
+  }), [firstName, lastName, playStyle, dominantHand, avatar.currentAvatar, mainClub, country, playerTag]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative overflow-hidden font-sans font-display-wrapper">
@@ -205,68 +159,15 @@ export default function OnboardingForm({ user, onComplete }) {
             )}
 
             {/* Avatar Upload Zone */}
-            <div className="flex flex-col items-center justify-center py-2 animate-fade-in">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleAvatarChange}
-                accept="image/*"
-                className="hidden"
-              />
-              
-              <div 
-                onClick={handleAvatarClick}
-                className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-dashed border-zinc-800 hover:border-neon-violet bg-zinc-950/60 transition-all duration-300 flex items-center justify-center cursor-pointer group overflow-hidden shadow-inner focus:outline-none"
-              >
-                {/* Visual feedback glow on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-neon-violet/0 to-neon-violet/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute -inset-0.5 rounded-full bg-neon-violet/10 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300" />
-
-                {previewUser.avatar ? (
-                  <>
-                    <img 
-                      src={previewUser.avatar} 
-                      alt="Avatar Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Hover Overlay */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1">
-                      <Camera className="w-5 h-5 text-neon-violet" />
-                      <span className="text-[8px] uppercase tracking-wider font-bold text-zinc-300">Modifier</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-3 space-y-1.5 select-none">
-                    <div className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-neon-violet/40 transition-colors">
-                      <User className="w-5 h-5 text-zinc-500 group-hover:text-neon-violet transition-colors" />
-                    </div>
-                    <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500 group-hover:text-neon-violet transition-colors leading-normal">
-                      Ajouter une photo
-                    </span>
-                  </div>
-                )}
-
-                {/* Uploading loading spinner overlay */}
-                {uploadingAvatar && (
-                  <div className="absolute inset-0 bg-black/80 flex items-center justify-center backdrop-blur-[1px]">
-                    <Loader2 className="w-6 h-6 text-neon-violet animate-spin" />
-                  </div>
-                )}
-              </div>
-
-              {/* Avatar Error Notice */}
-              {avatarError && (
-                <span className="text-[10px] text-red-400 font-semibold mt-2 text-center leading-relaxed">
-                  {avatarError}
-                </span>
-              )}
-              
-              {!avatarPreview && !avatarUrl && !avatarError && (
-                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-2 select-none">
-                  Format recommandé : Carré (PNG, JPG)
-                </span>
-              )}
-            </div>
+            <AvatarUploadZone
+              avatar={avatar.currentAvatar}
+              uploading={avatar.uploading}
+              error={avatar.error}
+              onAvatarClick={avatar.handleClick}
+              fileInputRef={avatar.fileInputRef}
+              onFileChange={avatar.handleFileChange}
+              size="lg"
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Prénom */}
