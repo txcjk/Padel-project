@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import PlayerCard from './PlayerCard';
-import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, User } from 'lucide-react';
+import { Zap, MapPin, Compass, ShieldCheck, ArrowRight, User, Camera, Loader2 } from 'lucide-react';
 
 export default function OnboardingForm({ user, onComplete }) {
   const [firstName, setFirstName] = useState('');
@@ -11,8 +11,61 @@ export default function OnboardingForm({ user, onComplete }) {
   const [dominantHand, setDominantHand] = useState('Droitier');
   const [playStyle, setPlayStyle] = useState('Stratège');
   const [mainClub, setMainClub] = useState('');
+  
+  // Avatar states
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const fileInputRef = useRef(null);
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Instant local preview for premium visual feedback on the FIFA card
+    const preview = URL.createObjectURL(file);
+    setAvatarPreview(preview);
+    setUploadingAvatar(true);
+    setAvatarError(null);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload to Supabase 'avatars' Storage Bucket
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          upsert: true,
+          cacheControl: '3600'
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(data.publicUrl);
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      setAvatarError("Erreur lors du chargement de l'image. Veuillez réessayer.");
+      setAvatarPreview(null);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +88,7 @@ export default function OnboardingForm({ user, onComplete }) {
           hand: dominantHand,
           play_style: playStyle,
           club: mainClub.trim(),
+          avatar_url: avatarUrl,
           elo_rating: 1000,
           fair_play_score: 100,
           punctuality_rate: 100,
@@ -52,6 +106,7 @@ export default function OnboardingForm({ user, onComplete }) {
         club: mainClub.trim(),
         hand: dominantHand,
         playStyle: playStyle,
+        avatar: avatarUrl,
         elo: 1000,
         rank: { label: 'Bronze', color: 'bronze' },
         fairPlay: 100,
@@ -73,7 +128,7 @@ export default function OnboardingForm({ user, onComplete }) {
     rank: { label: 'Bronze', color: 'bronze' },
     playStyle: playStyle,
     hand: dominantHand,
-    avatar: null,
+    avatar: avatarPreview || avatarUrl || null,
     club: mainClub.trim() || 'Mon Club Principal',
     globalRank: 12,
     fairPlay: 100,
@@ -91,7 +146,7 @@ export default function OnboardingForm({ user, onComplete }) {
       <div className="relative w-full max-w-5xl bg-zinc-900/60 border border-zinc-800/80 rounded-3xl overflow-hidden backdrop-blur-2xl shadow-2xl flex flex-col lg:flex-row items-stretch animate-slide-in">
         
         {/* LEFT COLUMN: FORM */}
-        <div className="flex-1 p-8 sm:p-10 flex flex-col justify-between space-y-8">
+        <div className="flex-1 p-8 sm:p-10 flex flex-col justify-between space-y-6">
           
           {/* Header Title */}
           <div className="space-y-2">
@@ -114,6 +169,70 @@ export default function OnboardingForm({ user, onComplete }) {
                 {error}
               </div>
             )}
+
+            {/* Avatar Upload Zone */}
+            <div className="flex flex-col items-center justify-center py-2 animate-fade-in">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                accept="image/*"
+                className="hidden"
+              />
+              
+              <div 
+                onClick={handleAvatarClick}
+                className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-dashed border-zinc-800 hover:border-neon-violet bg-zinc-950/60 transition-all duration-300 flex items-center justify-center cursor-pointer group overflow-hidden shadow-inner focus:outline-none"
+              >
+                {/* Visual feedback glow on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-neon-violet/0 to-neon-violet/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute -inset-0.5 rounded-full bg-neon-violet/10 opacity-0 group-hover:opacity-100 blur-sm transition-opacity duration-300" />
+
+                {previewUser.avatar ? (
+                  <>
+                    <img 
+                      src={previewUser.avatar} 
+                      alt="Avatar Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-1">
+                      <Camera className="w-5 h-5 text-neon-violet" />
+                      <span className="text-[8px] uppercase tracking-wider font-bold text-zinc-300">Modifier</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center p-3 space-y-1.5 select-none">
+                    <div className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center group-hover:border-neon-violet/40 transition-colors">
+                      <User className="w-5 h-5 text-zinc-500 group-hover:text-neon-violet transition-colors" />
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500 group-hover:text-neon-violet transition-colors leading-normal">
+                      Ajouter une photo
+                    </span>
+                  </div>
+                )}
+
+                {/* Uploading loading spinner overlay */}
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 bg-black/80 flex items-center justify-center backdrop-blur-[1px]">
+                    <Loader2 className="w-6 h-6 text-neon-violet animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Avatar Error Notice */}
+              {avatarError && (
+                <span className="text-[10px] text-red-400 font-semibold mt-2 text-center leading-relaxed">
+                  {avatarError}
+                </span>
+              )}
+              
+              {!avatarPreview && !avatarUrl && !avatarError && (
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider mt-2 select-none">
+                  Format recommandé : Carré (PNG, JPG)
+                </span>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Prénom */}
