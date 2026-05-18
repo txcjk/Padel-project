@@ -165,8 +165,8 @@ export default function App() {
   // Admin access check
   const isAdmin = session?.user?.email === 'ludow3b@gmail.com'
 
-  // Elite status — TODO: connect to real subscription logic
-  const isElite = userProfile?.isElite || false
+  // Elite status — connected to Supabase is_elite column
+  const isElite = userProfile?.isElite === true
 
   // Listen to Auth changes
   useEffect(() => {
@@ -242,7 +242,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag')
+        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag, is_elite')
         .eq('id', userId)
         .single()
 
@@ -261,6 +261,7 @@ export default function App() {
           playStyle: data.play_style || 'Stratège',
           avatar: data.avatar_url || null,
           playerTag: data.player_tag || '',
+          isElite: data.is_elite === true,
           elo: data.elo_rating ?? 1000,
           rank: getRankFromElo(data.elo_rating ?? 1000),
           fairPlay: data.fair_play_score ?? 100,
@@ -288,7 +289,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, club, region, elo_rating')
+        .select('id, first_name, last_name, club, region, elo_rating, is_elite')
         .order('elo_rating', { ascending: false })
         .limit(50)
         
@@ -303,6 +304,7 @@ export default function App() {
           region: p.region || 'Nouvelle-Aquitaine',
           elo: p.elo_rating ?? 1000,
           rank: getRankFromElo(p.elo_rating ?? 1000),
+          isElite: p.is_elite === true,
           winRate: Math.floor(Math.random() * (75 - 40 + 1)) + 40
         }))
         setLeaderboardPlayers(mapped)
@@ -801,7 +803,7 @@ export default function App() {
 
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-4 animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            <PlayerCard user={{ ...userProfile, globalRank: leaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+            <PlayerCard user={{ ...userProfile, isElite, globalRank: leaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
           </div>
 
           <div className="lg:col-span-8 animate-slide-in" style={{ animationDelay: '0.3s' }}>
@@ -815,7 +817,7 @@ export default function App() {
         </div>
         
         <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
-          <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} />
+          <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} currentUserIsElite={isElite} />
         </section>
 
         <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.5s' }}>

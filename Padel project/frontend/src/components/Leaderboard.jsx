@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Trophy, MapPin, Swords, Medal, Crown } from 'lucide-react'
+import { Trophy, MapPin, Swords, Medal, Crown, Sparkles } from 'lucide-react'
 
 const getTierStyle = (tierColor) => {
   const styles = {
@@ -23,7 +23,7 @@ const getTierTextGlow = (tierColor) => {
   return styles[tierColor] || styles.bronze
 }
 
-export default function Leaderboard({ players, currentUser, onSelectPlayer }) {
+export default function Leaderboard({ players, currentUser, onSelectPlayer, currentUserIsElite }) {
   const [activeTab, setActiveTab] = useState('Général')
 
   // Sort and filter players (memoized)
@@ -129,9 +129,14 @@ export default function Leaderboard({ players, currentUser, onSelectPlayer }) {
                     {player.firstName[0]}{player.lastName[0]}
                   </div>
                   <div className="min-w-0">
-                    <p className={`text-sm font-bold truncate ${isCurrentUser ? 'text-neon-violet' : 'text-zinc-200'}`}>
-                      {player.firstName} {player.lastName}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className={`text-sm font-bold truncate ${isCurrentUser ? 'text-neon-violet' : 'text-zinc-200'}`}>
+                        {player.firstName} {player.lastName}
+                      </p>
+                      {player.isElite && (
+                        <Sparkles className="w-3 h-3 text-fuchsia-400 shrink-0" />
+                      )}
+                    </div>
                     {isCurrentUser && <span className="text-[9px] uppercase font-bold text-neon-violet tracking-widest">Vous</span>}
                   </div>
                 </div>

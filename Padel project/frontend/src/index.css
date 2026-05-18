@@ -105,3 +105,31 @@
 /* Star rating interaction */
 .star-btn { transition: transform 0.15s ease, color 0.15s ease; }
 .star-btn:hover { transform: scale(1.25); }
+
+/* ============================================
+   Elite Member — Premium Visual Effects
+   ============================================ */
+@keyframes gradient-xy {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+@keyframes elite-shimmer {
+  0% { opacity: 0.5; transform: scale(0.98); }
+  50% { opacity: 0.9; transform: scale(1.02); }
+  100% { opacity: 0.5; transform: scale(0.98); }
+}
+
+@layer utilities {
+  .animate-gradient-xy {
+    background-size: 300% 300%;
+    animation: gradient-xy 4s ease infinite;
+  }
+  .glow-elite {
+    box-shadow: 0 0 20px rgba(139,92,246,0.45), 0 0 50px rgba(168,85,247,0.25), 0 0 80px rgba(236,72,153,0.15);
+  }
+  .animate-elite-shimmer {
+    animation: elite-shimmer 3s ease-in-out infinite;
+  }
+}

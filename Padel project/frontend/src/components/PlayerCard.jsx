@@ -1,4 +1,4 @@
-import { Crown, Medal } from 'lucide-react'
+import { Crown, Medal, Sparkles } from 'lucide-react'
 
 // FIFA Tier definitions
 const rankStyles = {
@@ -46,6 +46,7 @@ export default function PlayerCard({ user }) {
   const playStyleShort = user.playStyle === 'Attaquant' ? 'ATT' : user.playStyle === 'Défenseur' ? 'DEF' : 'STR'
   const handInitial = user.hand === 'Gaucher' ? 'G' : 'D'
   const isDiamond = rankColorKey === 'diamond'
+  const isElite = user.isElite === true
   const rankNum = Number(user.globalRank || 12)
 
   return (
@@ -61,9 +62,16 @@ export default function PlayerCard({ user }) {
         />
       )}
 
+      {/* ELITE MEMBER AURA GLOW — animated multi-color halo */}
+      {isElite && !isDiamond && (
+        <div 
+          className="absolute -inset-3 bg-gradient-to-r from-violet-600 via-fuchsia-500 to-cyan-500 rounded-[28px] opacity-60 blur-xl animate-gradient-xy animate-elite-shimmer group-hover:opacity-90 transition-opacity duration-500 z-0"
+        />
+      )}
+
       {/* Wrapper External Card (Border Gradient) */}
       <div 
-        className={`relative p-[3px] bg-gradient-to-br ${style.bgOuter} transition-all duration-500 hover:scale-[1.03] z-10 filter drop-shadow-2xl`}
+        className={`relative p-[3px] bg-gradient-to-br ${style.bgOuter} transition-all duration-500 hover:scale-[1.03] z-10 filter drop-shadow-2xl ${isElite ? 'glow-elite' : ''}`}
         style={{ clipPath: 'polygon(50% 0%, 100% 12%, 100% 85%, 50% 100%, 0% 85%, 0% 12%)' }}
       >
         {/* Inner Card (Dark Background) */}
@@ -127,6 +135,15 @@ export default function PlayerCard({ user }) {
             <h2 className="font-display font-black text-lg uppercase tracking-widest text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] truncate">
               {user.firstName} {user.lastName}
             </h2>
+            {isElite && (
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <Sparkles className="w-3 h-3 text-fuchsia-400" />
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-md">
+                  Membre Élite
+                </span>
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+              </div>
+            )}
             {user.playerTag && (
               <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mt-0.5 drop-shadow-md">
                 {user.playerTag}
