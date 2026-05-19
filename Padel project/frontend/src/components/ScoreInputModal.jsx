@@ -14,12 +14,15 @@ export default function ScoreInputModal({ match, onClose, onSubmitScore, onPropo
   const [isSubmitted, setIsSubmitted] = useState(false)
 
   // Identify teams dynamically
+  const isDemoMatch = typeof match.id === 'string' && match.id.startsWith('demo-');
   const myTeamNum = match.myTeam || 1;
   const partner = match.players ? match.players.find(p => p.team === myTeamNum) : null;
-  const myPartnerName = partner ? partner.name : "Lucas M.";
-  const opponentNames = match.players && match.players.length > 0
-    ? match.players.filter(p => p.team !== myTeamNum).map(p => p.name).join(' & ')
-    : "Sofia R. & Marc T.";
+  const myPartnerName = partner ? partner.name : (isDemoMatch ? "Lucas M." : "Partenaire non assigné");
+  
+  const opponents = match.players ? match.players.filter(p => p.team !== myTeamNum) : [];
+  const opponentNames = opponents.length > 0
+    ? opponents.map(p => p.name).join(' & ')
+    : (isDemoMatch ? "Sofia R. & Marc T." : "Adversaires non assignés");
 
   // Determine if a 3rd set is required
   const wonS1Us = s1Us > s1Them

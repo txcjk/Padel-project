@@ -428,6 +428,7 @@ export default function App() {
             id: m.id,
             club: m.club || 'Club Padel',
             date: dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }),
+            rawDate: m.scheduled_at,
             time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             type: m.match_type,
             status: m.status,
