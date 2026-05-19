@@ -33,3 +33,6 @@ npm-debug.log*
 # Credentials & Secrets
 *credentials*
 *.git-credentials
+
+# Playwright MCP
+.playwright-mcp/
