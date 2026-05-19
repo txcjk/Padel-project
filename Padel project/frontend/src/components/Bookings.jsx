@@ -16,6 +16,30 @@ export default function Bookings({
 
   const COURTS = ['Court Central', 'Court 2', 'Court 3 (Panoramique)']
 
+  // Pricing helper for clubs slot duration (1h30)
+  const getSlotPrice = (time, dateStr, clubName) => {
+    if (clubName !== '¡HOLA! PADEL') {
+      return { price: 10, isCreuse: true, label: 'Tarif Standard' };
+    }
+    
+    const dateObj = new Date(dateStr);
+    const day = dateObj.getDay(); // 0 = Sunday, 6 = Saturday
+    const isWeekend = day === 0 || day === 6;
+    
+    if (isWeekend) {
+      return { price: 15, isCreuse: false, label: 'Heures Pleines (Week-end)' };
+    }
+    
+    // Semaine : Heures Creuses (12€) pour '09:30' et '14:00'. Les autres sont Heures Pleines (15€).
+    const isCreuse = (time === '09:30' || time === '14:00');
+    
+    if (isCreuse) {
+      return { price: 12, isCreuse: true, label: 'Heures Creuses (Semaine)' };
+    } else {
+      return { price: 15, isCreuse: false, label: 'Heures Pleines (Semaine)' };
+    }
+  };
+
   // Library of Clubs & Selection States
   const [clubsList, setClubsList] = useState([])
   const [selectedClub, setSelectedClub] = useState('')
@@ -48,12 +72,33 @@ export default function Bookings({
 
   const loadClubs = async () => {
     const defaultClubs = [
+      { 
+        id: 'f2c8d3a4-9821-4fb1-ac19-d8e23f009cb3', 
+        name: '¡HOLA! PADEL', 
+        address: '15 avenue de Berlincan', 
+        city: 'Saint-Médard-en-Jalles', 
+        postal_code: '33160', 
+        indoor_courts: 5, 
+        amenities: '5 pistes indoor ultra-panoramiques (Mondo Supercourt XN), Hauteur 10m, Hola Bodega / Restauration, Vestiaires individuels', 
+        latitude: 44.8964, 
+        longitude: -0.7208, 
+        software_provider: 'none', 
+        external_api_id: 'hola-padel-smj' 
+      },
       { id: 'b0467c6c-829d-4340-9a2d-114eb307421f', name: '4PADEL Bordeaux', address: '9 Rue de la Cabane, 33300 Bordeaux', city: 'Bordeaux', latitude: 44.8722, longitude: -0.5631, software_provider: 'Doinsport', external_api_id: 'doi-bx-4p' },
       { id: 'c537d921-2092-491c-b715-e2d93e11a37c', name: 'Big Padel Jet Sports', address: '10 Rue de la Verrerie, 33000 Bordeaux', city: 'Bordeaux', latitude: 44.8614, longitude: -0.5512, software_provider: 'Anybuddy', external_api_id: 'any-bx-bp' },
       { id: 'a7d8e9f1-3321-4d1a-8219-fc8a0112bf88', name: 'Padel Touch Arcachon', address: 'Avenue de l\'Europe, 33260 La Teste-de-Buch', city: 'Arcachon', latitude: 44.5982, longitude: -1.1394, software_provider: 'GestionSports', external_api_id: 'gs-arc-pt' },
       { id: 'e1c8d2a3-9821-4fb1-ac19-d8e23f009cb2', name: 'Padel Arena Rouen', address: 'Route de Lyon, 76000 Rouen', city: 'Rouen', latitude: 49.4295, longitude: 1.1098, software_provider: 'Doinsport', external_api_id: 'doi-rou-pa' },
       { id: 'd4e5f6a7-0091-4bc1-aa11-1a2b3c4d5e6f', name: 'Casa Padel Paris', address: '103 Rue Charles Michels, 93200 Saint-Denis', city: 'Paris', latitude: 48.9244, longitude: 2.3489, software_provider: 'Anybuddy', external_api_id: 'any-par-cp' }
     ]
+
+    const sortClubsFeatured = (list) => {
+      return [...list].sort((a, b) => {
+        if (a.name === '¡HOLA! PADEL') return -1;
+        if (b.name === '¡HOLA! PADEL') return 1;
+        return 0;
+      });
+    }
 
     if (isDemo) {
       setClubsList(defaultClubs)
@@ -81,9 +126,10 @@ export default function Bookings({
       }
       
       if (data && data.length > 0) {
-        setClubsList(data)
-        setSelectedClub(data[0].name)
-        setSelectedClubObj(data[0])
+        const sorted = sortClubsFeatured(data)
+        setClubsList(sorted)
+        setSelectedClub(sorted[0].name)
+        setSelectedClubObj(sorted[0])
       } else {
         // If city filter returned nothing, fetch all clubs
         const { data: allData, error: allErr } = await supabase.from('clubs').select('*')
@@ -92,9 +138,10 @@ export default function Bookings({
           setSelectedClub(defaultClubs[0].name)
           setSelectedClubObj(defaultClubs[0])
         } else {
-          setClubsList(allData)
-          setSelectedClub(allData[0].name)
-          setSelectedClubObj(allData[0])
+          const sortedAll = sortClubsFeatured(allData)
+          setClubsList(sortedAll)
+          setSelectedClub(sortedAll[0].name)
+          setSelectedClubObj(sortedAll[0])
         }
       }
     } catch (err) {
@@ -413,6 +460,21 @@ export default function Bookings({
                 <p className="text-zinc-400 text-xs flex items-center gap-1.5 font-semibold">
                   <Clock className="w-3.5 h-3.5 text-zinc-500" /> {selectedSlot.time} le {new Date(selectedDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
                 </p>
+                {(() => {
+                  const pricing = getSlotPrice(selectedSlot.time, selectedDate, selectedClub);
+                  return (
+                    <div className="mt-2.5 pt-2.5 border-t border-zinc-900/60 flex justify-between items-center text-xs">
+                      <div>
+                        <span className="text-[9px] uppercase tracking-wider font-bold text-zinc-500">Tarif (1h30)</span>
+                        <p className={`font-semibold ${pricing.isCreuse ? 'text-neon-lime' : 'text-zinc-300'}`}>{pricing.label}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-white text-base font-black">{pricing.price}€</span>
+                        <span className="text-[9px] text-zinc-500 block">/ joueur</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <button
@@ -489,14 +551,20 @@ export default function Bookings({
                       btnClass = 'bg-neon-lime border-neon-lime text-zinc-950 glow-lime font-black'
                     }
 
+                    const pricing = getSlotPrice(time, selectedDate, selectedClub);
                     return (
                       <button
                         key={time}
                         onClick={() => handleSelectSlot(time, court)}
                         disabled={isTaken}
-                        className={`py-2 rounded-lg border text-center font-mono text-[10px] font-bold tracking-wide transition-all cursor-pointer ${btnClass}`}
+                        className={`py-2 rounded-lg border text-center font-mono text-[10px] font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${btnClass}`}
                       >
-                        {time}
+                        <span className="text-[10px]">{time}</span>
+                        {!isTaken && (
+                          <span className={`text-[8px] opacity-75 font-semibold ${isSelected ? 'text-zinc-950 font-black' : 'text-zinc-400'}`}>
+                            {pricing.price}€
+                          </span>
+                        )}
                       </button>
                     )
                   })}

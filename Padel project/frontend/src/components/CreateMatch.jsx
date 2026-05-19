@@ -14,6 +14,7 @@ export default function CreateMatch({
   const toast = useToast()
   
   const CLUBS = [
+    '¡HOLA! PADEL',
     '4Padels Bordeaux', 
     'Big Padel Jet Sports', 
     'Padel Touch Arcachon', 
