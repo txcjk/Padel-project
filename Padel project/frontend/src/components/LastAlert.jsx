@@ -63,12 +63,12 @@ function UrgentMatchCard({ match, onSaveMatch }) {
 }
 
 export default function LastAlert({ matches, savedCount, onSaveMatch }) {
-  if (!matches || matches.length === 0) return null
+  const isEmpty = !matches || matches.length === 0;
 
   return (
-    <div className="rounded-2xl overflow-hidden animate-pulse-violet">
+    <div className={`rounded-2xl overflow-hidden ${isEmpty ? 'border border-zinc-800/30' : 'animate-pulse-violet'}`}>
       {/* Gradient border effect */}
-      <div className="bg-gradient-to-r from-neon-violet/20 via-purple-900/30 to-neon-violet/20 border border-neon-violet/25 rounded-2xl">
+      <div className={`${isEmpty ? 'bg-zinc-900/10' : 'bg-gradient-to-r from-neon-violet/20 via-purple-900/30 to-neon-violet/20 border border-neon-violet/25'} rounded-2xl`}>
         <div className="bg-zinc-950/90 backdrop-blur-sm rounded-2xl p-5 space-y-4">
 
           {/* Header row */}
@@ -84,7 +84,7 @@ export default function LastAlert({ matches, savedCount, onSaveMatch }) {
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <Clock className="w-3 h-3 text-zinc-500" />
                   <span className="text-[11px] text-zinc-500">
-                    {matches.length} match{matches.length > 1 ? 's' : ''} dans les 2 prochaines heures
+                    {isEmpty ? "Pas de match en attente" : `${matches.length} match${matches.length > 1 ? 's' : ''} dans les 2 prochaines heures`}
                   </span>
                 </div>
               </div>
@@ -92,12 +92,20 @@ export default function LastAlert({ matches, savedCount, onSaveMatch }) {
             <SavedBadge count={savedCount} />
           </div>
 
-          {/* Urgent matches list */}
-          <div className="space-y-3">
-            {matches.map((m) => (
-              <UrgentMatchCard key={m.id} match={m} onSaveMatch={onSaveMatch} />
-            ))}
-          </div>
+          {/* Urgent matches list / Empty state */}
+          {isEmpty ? (
+            <div className="flex flex-col items-center justify-center py-6 px-4 rounded-xl bg-zinc-900/20 border border-zinc-850 text-center space-y-2">
+              <Clock className="w-8 h-8 text-zinc-700 animate-pulse" />
+              <p className="text-sm font-medium text-zinc-400">Aucun match urgent pour le moment.</p>
+              <p className="text-xs text-zinc-600">Revenez plus tard ou proposez votre propre défi !</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {matches.map((m) => (
+                <UrgentMatchCard key={m.id} match={m} onSaveMatch={onSaveMatch} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

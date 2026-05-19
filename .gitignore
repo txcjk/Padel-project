@@ -36,3 +36,6 @@ Thumbs.db
 # Credentials & Secrets
 *credentials*
 *.git-credentials
+
+# Playwright MCP
+.playwright-mcp/

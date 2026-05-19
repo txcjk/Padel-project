@@ -19,6 +19,11 @@ import EditProfileModal from './components/EditProfileModal.jsx'
 import ProStats from './components/ProStats.jsx'
 import RankedLimitModal from './components/RankedLimitModal.jsx'
 import AdminPanel from './components/AdminPanel.jsx'
+import { LayoutDashboard, PlusCircle, Calendar, MessageSquare, Trophy } from 'lucide-react'
+import CreateMatch from './components/CreateMatch.jsx'
+import Bookings from './components/Bookings.jsx'
+import Chat from './components/Chat.jsx'
+import Tournaments from './components/Tournaments.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -171,6 +176,9 @@ export default function App() {
   const [recentMatches, setRecentMatches] = useState([])
   const [leaderboardPlayers, setLeaderboardPlayers] = useState([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [prefilledMatchData, setPrefilledMatchData] = useState(null)
+  const [activeChatRecipient, setActiveChatRecipient] = useState(null)
 
   // Review Modal States
   const [showReviewModal, setShowReviewModal] = useState(false)
@@ -343,18 +351,18 @@ export default function App() {
 
   const fetchUrgentMatches = async (userId) => {
     try {
-      // RPC optimisé : inclut directement le COUNT des participants
+      // 1. Essai RPC optimisé
       const { data, error } = await supabase
         .rpc('find_last_urgent_matches', { p_user_id: userId })
 
-      if (error) throw error
-      if (data && data.length > 0) {
+      if (!error && data) {
         const mapped = data.map(m => {
-          const dateObj = new Date(m.scheduled_at)
+          const rawDate = m.scheduled_at || m.date_time
+          const dateObj = rawDate ? new Date(rawDate) : new Date()
           const isToday = dateObj.toDateString() === new Date().toDateString()
           return {
             id: m.id,
-            club: m.club || 'Padel Club Lac',
+            club: m.club || m.club_name || 'Padel Club Lac',
             time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             date: isToday ? "Aujourd'hui" : dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
             eloRequired: `${m.elo_min ?? 800}-${m.elo_max ?? 2000}`,
@@ -363,12 +371,84 @@ export default function App() {
           }
         })
         setUrgentMatches(mapped)
+        return
+      }
+      if (error) {
+        console.warn("L'appel RPC 'find_last_urgent_matches' a retourné une erreur:", error.message)
+      }
+    } catch (e) {
+      console.warn("L'appel RPC 'find_last_urgent_matches' a échoué:", e.message)
+    }
+
+    // 2. Fallback direct sur la table matches en supportant les deux schémas
+    try {
+      let dbMatches = null
+      let dbError = null
+
+      try {
+        // Tentative 1 : Nouveau schéma
+        const { data, error } = await supabase
+          .from('matches')
+          .select('id, club_name, date_time, type, is_urgent, slots_available')
+          .eq('is_urgent', true)
+        
+        if (error) {
+          dbError = error
+        } else {
+          dbMatches = data
+        }
+      } catch (errNew) {
+        dbError = errNew
+      }
+
+      // Si erreur ou pas de données, tentative 2 : Ancien schéma
+      if (dbError || !dbMatches) {
+        console.warn("Échec requête nouveau schéma, tentative avec l'ancien schéma...")
+        try {
+          const { data, error } = await supabase
+            .from('matches')
+            .select('id, club, scheduled_at, match_type, is_last_urgent')
+            .eq('is_last_urgent', true)
+          
+          if (!error) {
+            dbMatches = data
+            dbError = null // Nettoyer l'erreur précédente car le fallback a réussi
+          } else {
+            dbError = error
+          }
+        } catch (errOld) {
+          dbError = errOld
+        }
+      }
+
+      if (dbError) throw dbError
+
+      if (dbMatches && dbMatches.length > 0) {
+        const mapped = dbMatches.map(m => {
+          const rawDate = m.date_time || m.scheduled_at
+          const dateObj = rawDate ? new Date(rawDate) : new Date()
+          const isToday = dateObj.toDateString() === new Date().toDateString()
+          
+          const slotsAvail = m.slots_available !== undefined ? m.slots_available : 1
+          const playersJoined = 4 - slotsAvail
+
+          return {
+            id: m.id,
+            club: m.club_name || m.club || 'Padel Club Lac',
+            time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            date: isToday ? "Aujourd'hui" : dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+            eloRequired: '800-2000',
+            playersJoined: Math.max(0, Math.min(4, playersJoined)),
+            playersNeeded: 4,
+          }
+        })
+        setUrgentMatches(mapped)
       } else {
         setUrgentMatches([])
       }
-    } catch (err) {
-      console.error("Erreur matches urgents:", err.message)
-      toast.error("Impossible de charger les matchs urgents.")
+    } catch (fallbackErr) {
+      console.warn("Échec complet du chargement des matchs urgents (fail silent) :", fallbackErr.message)
+      setUrgentMatches([])
     }
   }
 
@@ -742,8 +822,64 @@ export default function App() {
   }
 
   const handleChallengePlayer = (player) => {
-    toast.success(`Défi envoyé avec succès à ${player.firstName} ${player.lastName} ! Une invitation a été envoyée.`)
     setSelectedPlayer(null)
+    setActiveChatRecipient(player)
+    setActiveTab('chat')
+    toast.success(`Salon de discussion privé ouvert avec ${player.firstName} ${player.lastName} pour organiser votre match !`)
+  }
+
+  const handleShortcutToCreateMatch = (data) => {
+    setPrefilledMatchData(data)
+    setActiveTab('create-match')
+    toast.success("Informations du créneau pré-remplies. Vous pouvez maintenant publier votre match !")
+  }
+
+  const handleNavigateToDashboard = () => {
+    setPrefilledMatchData(null)
+    setActiveTab('dashboard')
+  }
+
+  const handleAddMatch = (newMatch) => {
+    if (isDemo) {
+      if (newMatch.is_last_urgent || newMatch.eloMin) {
+        setUrgentMatches(prev => {
+          const dateObj = new Date(newMatch.rawDate || newMatch.scheduled_at)
+          const isToday = dateObj.toDateString() === new Date().toDateString()
+          const mapped = {
+            id: newMatch.id,
+            club: newMatch.club,
+            time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            date: isToday ? "Aujourd'hui" : dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+            eloRequired: `${newMatch.eloMin ?? 800}-${newMatch.eloMax ?? 2000}`,
+            playersJoined: 1,
+            playersNeeded: 4,
+            type: newMatch.type
+          }
+          return [mapped, ...prev]
+        })
+      }
+      
+      setRecentMatches(prev => {
+        const dateObj = new Date(newMatch.rawDate || newMatch.scheduled_at)
+        const mappedRecent = {
+          id: newMatch.id,
+          club: newMatch.club,
+          date: dateObj.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }),
+          rawDate: newMatch.rawDate || newMatch.scheduled_at,
+          time: dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          type: newMatch.type,
+          status: 'Pending',
+          score: null,
+          eloChange: 0,
+          needsReview: false,
+          players: newMatch.players || [{ id: userProfile.id, name: `${userProfile.firstName} ${userProfile.lastName ? userProfile.lastName[0] + '.' : ''}`, team: 1 }],
+          myTeam: 1
+        }
+        return [mappedRecent, ...prev]
+      })
+    } else {
+      loadSupabaseData(userProfile.id)
+    }
   }
 
   // --- Demo Mode Handlers ---
@@ -814,50 +950,176 @@ export default function App() {
         onProfileClick={() => setShowEditProfile(true)} 
         isAdmin={isAdmin}
         onAdminClick={() => setShowAdminPanel(true)}
+        onNavigateTab={(tab) => {
+          setActiveTab(tab);
+          setPrefilledMatchData(null);
+        }}
       />
+
+      {/* Sticky Premium Tab Bar */}
+      <div className="sticky top-16 z-40 w-full bg-zinc-950/70 backdrop-blur-md border-b border-zinc-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex items-center justify-start md:justify-center overflow-x-auto py-2.5 gap-2 md:gap-4 scrollbar-none">
+            
+            <button
+              onClick={() => { setActiveTab('dashboard'); setPrefilledMatchData(null); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'dashboard'
+                  ? 'bg-neon-lime/10 border border-neon-lime/30 text-neon-lime glow-lime text-glow-lime'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 border border-transparent'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Tableau de Bord</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('create-match'); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'create-match'
+                  ? 'bg-neon-lime/10 border border-neon-lime/30 text-neon-lime glow-lime text-glow-lime'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 border border-transparent'
+              }`}
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Lancer un Match</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('bookings'); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'bookings'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 glow-lime'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 border border-transparent'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Réservations</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('chat'); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'chat'
+                  ? 'bg-neon-violet/10 border border-neon-violet/30 text-neon-violet glow-violet text-glow-violet'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 border border-transparent'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Messagerie</span>
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('tournaments'); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+                activeTab === 'tournaments'
+                  ? 'bg-neon-lime/10 border border-neon-lime/30 text-neon-lime glow-lime text-glow-lime'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 border border-transparent'
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              <span>Tournois Official</span>
+            </button>
+
+          </nav>
+        </div>
+      </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         
         {/* Consensus banner if any pending validation */}
-        <section className="mt-6">
-          <ScoreApprovalBanner 
-            pendingMatches={recentMatches.filter(m => m.status === 'Pending_Validation')}
-            onApprove={handleApproveScore}
-            onDispute={handleDisputeScore}
-          />
-        </section>
+        {recentMatches.filter(m => m.status === 'Pending_Validation').length > 0 && (
+          <section className="mt-6">
+            <ScoreApprovalBanner 
+              pendingMatches={recentMatches.filter(m => m.status === 'Pending_Validation')}
+              onApprove={handleApproveScore}
+              onDispute={handleDisputeScore}
+            />
+          </section>
+        )}
 
-        <section className="mt-6 animate-slide-in" style={{ animationDelay: '0.1s' }}>
-          <LastAlert matches={urgentMatches} savedCount={userProfile.matchesSaved} onSaveMatch={handleSaveMatch} />
-        </section>
+        {/* Tab views */}
+        {activeTab === 'dashboard' && (
+          <div className="animate-fade-in space-y-8">
+            <section className="mt-6">
+              <LastAlert matches={urgentMatches} savedCount={userProfile.matchesSaved} onSaveMatch={handleSaveMatch} />
+            </section>
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            <PlayerCard user={{ ...userProfile, isElite, globalRank: leaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <div className="lg:col-span-4">
+                <PlayerCard user={{ ...userProfile, isElite, globalRank: leaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+              </div>
+
+              <div className="lg:col-span-8">
+                <MatchFeed 
+                  matches={visibleRecentMatches} 
+                  onOpenReview={handleOpenReview} 
+                  onOpenScore={handleOpenScoreFlow} 
+                  onEmergencyCancel={handleEmergencyCancel}
+                />
+              </div>
+            </div>
+            
+            <section>
+              <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} currentUserIsElite={isElite} />
+            </section>
+
+            <section>
+              <ProStats 
+                user={userProfile} 
+                matches={recentMatches} 
+                isElite={isElite} 
+                onUpgrade={() => setShowPremium(true)} 
+              />
+            </section>
           </div>
+        )}
 
-          <div className="lg:col-span-8 animate-slide-in" style={{ animationDelay: '0.3s' }}>
-            <MatchFeed 
-              matches={visibleRecentMatches} 
-              onOpenReview={handleOpenReview} 
-              onOpenScore={handleOpenScoreFlow} 
-              onEmergencyCancel={handleEmergencyCancel}
+        {activeTab === 'create-match' && (
+          <div className="animate-fade-in">
+            <CreateMatch 
+              user={userProfile}
+              isElite={isElite}
+              isDemo={isDemo}
+              onAddMatch={handleAddMatch}
+              prefilledData={prefilledMatchData}
+              onNavigateToDashboard={handleNavigateToDashboard}
             />
           </div>
-        </div>
-        
-        <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.4s' }}>
-          <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} currentUserIsElite={isElite} />
-        </section>
+        )}
 
-        <section className="mt-8 animate-slide-in" style={{ animationDelay: '0.5s' }}>
-          <ProStats 
-            user={userProfile} 
-            matches={recentMatches} 
-            isElite={isElite} 
-            onUpgrade={() => setShowPremium(true)} 
-          />
-        </section>
+        {activeTab === 'bookings' && (
+          <div className="animate-fade-in">
+            <Bookings 
+              user={userProfile}
+              isDemo={isDemo}
+              onShortcutToCreateMatch={handleShortcutToCreateMatch}
+            />
+          </div>
+        )}
+
+        {activeTab === 'chat' && (
+          <div className="animate-fade-in">
+            <Chat 
+              user={userProfile}
+              isDemo={isDemo}
+              recentMatches={recentMatches}
+              leaderboardPlayers={leaderboardPlayers}
+              directMessageRecipient={activeChatRecipient}
+              onClearRecipient={() => setActiveChatRecipient(null)}
+            />
+          </div>
+        )}
+
+        {activeTab === 'tournaments' && (
+          <div className="animate-fade-in">
+            <Tournaments 
+              user={userProfile}
+              isDemo={isDemo}
+              leaderboardPlayers={leaderboardPlayers}
+            />
+          </div>
+        )}
       </main>
 
       {/* Dynamic Modals */}

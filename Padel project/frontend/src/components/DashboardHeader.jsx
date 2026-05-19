@@ -1,4 +1,4 @@
-import { Trophy, Zap, LogOut, Bell, Menu, X, Crown, Settings } from 'lucide-react'
+import { Trophy, Zap, LogOut, Bell, Menu, X, Crown, Settings, MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 
 function EloRankBadge({ elo, rank }) {
@@ -49,8 +49,52 @@ function UserAvatar({ firstName, lastName, avatar }) {
   )
 }
 
-export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProfileClick, isAdmin, onAdminClick }) {
+export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProfileClick, isAdmin, onAdminClick, onNavigateTab }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState([
+    {
+      id: 'n1',
+      title: 'Victoire Classée Validée !',
+      description: 'Le score de votre match à 4Padels Bordeaux est validé. +16 Elo !',
+      time: 'Il y a 10 min',
+      type: 'elo',
+      read: false,
+      tab: 'dashboard'
+    },
+    {
+      id: 'n2',
+      title: 'Inscription validée !',
+      description: 'Votre binôme avec Lucas M. pour le Bordeaux Master Cup est inscrit.',
+      time: 'Il y a 2 h',
+      type: 'tournament',
+      read: false,
+      tab: 'tournaments'
+    },
+    {
+      id: 'n3',
+      title: 'Nouveau Message',
+      description: 'Lucas M. : "Je serai là 10 minutes en avance pour m\'échauffer."',
+      time: 'Il y a 1 j',
+      type: 'chat',
+      read: true,
+      tab: 'chat'
+    }
+  ])
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const handleMarkAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const handleNotificationClick = (notif) => {
+    setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n))
+    setShowNotifications(false)
+    if (onNavigateTab) {
+      onNavigateTab(notif.tab)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800/60">
@@ -86,10 +130,87 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
             <EloRankBadge elo={user.elo} rank={user.rank} />
 
             {/* Notifications */}
-            <button className="relative p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group" id="notifications-btn" aria-label="Notifications">
-              <Bell className="w-5 h-5 text-zinc-400 group-hover:text-zinc-200 transition-colors" />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-neon-violet rounded-full border-2 border-zinc-950 animate-pulse" />
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 rounded-lg hover:bg-zinc-800/60 transition-colors group cursor-pointer" 
+                id="notifications-btn" 
+                aria-label="Notifications"
+              >
+                <Bell className={`w-5 h-5 transition-colors ${showNotifications ? 'text-neon-lime animate-[pulse_1.5s_infinite]' : 'text-zinc-400 group-hover:text-zinc-200'}`} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-neon-violet rounded-full border-2 border-zinc-950 animate-pulse" />
+                )}
+              </button>
+
+              {showNotifications && (
+                <>
+                  {/* Overlay click to close */}
+                  <div className="fixed inset-0 z-40 cursor-default" onClick={() => setShowNotifications(false)} />
+                  
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 mt-2.5 w-80 sm:w-96 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 shadow-[0_10px_40px_rgba(0,0,0,0.6)] z-50 animate-fade-in space-y-3">
+                    <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                      <span className="font-display font-black text-xs uppercase tracking-wider text-white">Notifications</span>
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={handleMarkAllRead}
+                          className="text-[10px] font-bold uppercase tracking-wider text-neon-lime hover:underline cursor-pointer bg-transparent border-none outline-none"
+                        >
+                          Tout marquer comme lu
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="max-h-64 overflow-y-auto space-y-2 pr-1 scrollbar-thin">
+                      {notifications.length > 0 ? (
+                        notifications.map(n => (
+                          <div 
+                            key={n.id}
+                            onClick={() => handleNotificationClick(n)}
+                            className={`p-3 rounded-xl border transition-all cursor-pointer flex gap-3 text-left ${
+                              n.read 
+                                ? 'bg-zinc-900/10 border-transparent hover:bg-zinc-900/40 text-zinc-400' 
+                                : 'bg-zinc-900/50 border-zinc-850 hover:bg-zinc-900 text-zinc-200 shadow-[0_0_15px_rgba(163,230,53,0.02)]'
+                            }`}
+                          >
+                            {/* Icon Indicator */}
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${
+                              n.type === 'elo' 
+                                ? 'bg-neon-lime/10 border-neon-lime/20 text-neon-lime glow-lime' 
+                                : n.type === 'tournament'
+                                ? 'bg-neon-violet/10 border-neon-violet/20 text-neon-violet glow-violet'
+                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                            }`}>
+                              {n.type === 'elo' && <Trophy className="w-4 h-4" />}
+                              {n.type === 'tournament' && <Crown className="w-4 h-4" />}
+                              {n.type === 'chat' && <MessageSquare className="w-4 h-4" />}
+                            </div>
+
+                            {/* Details */}
+                            <div className="flex-1 min-w-0 space-y-0.5">
+                              <div className="flex justify-between items-center gap-2">
+                                <span className={`text-xs font-bold truncate ${n.read ? 'text-zinc-300' : 'text-white'}`}>
+                                  {n.title}
+                                </span>
+                                <span className="text-[8px] text-zinc-500 font-medium whitespace-nowrap shrink-0">{n.time}</span>
+                              </div>
+                              <p className="text-[10px] leading-relaxed text-zinc-400 font-semibold line-clamp-2">
+                                {n.description}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-6 text-zinc-500 text-xs font-semibold">
+                          Aucune notification récente.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* Admin Panel Button */}
             {isAdmin && (
