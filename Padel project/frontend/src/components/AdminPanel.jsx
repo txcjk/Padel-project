@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Search, Crown, ShieldAlert, CheckCircle2, X, User } from 'lucide-react';
+import { Search, Crown, ShieldAlert, X, User } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+import { useToast } from './ToastProvider.jsx';
 
 export default function AdminPanel({ onClose }) {
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [toastMessage, setToastMessage] = useState(null);
 
   useEffect(() => {
     fetchUsers();
@@ -20,6 +21,7 @@ export default function AdminPanel({ onClose }) {
       setUsers(data || []);
     } catch (err) {
       console.error("Erreur chargement utilisateurs admin :", err.message);
+      toast.error("Impossible de charger la liste des utilisateurs.");
     } finally {
       setLoading(false);
     }
@@ -38,15 +40,12 @@ export default function AdminPanel({ onClose }) {
       // Mise à jour de l'état local
       setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_elite: newStatus } : u));
       
-      // Notification de succès
+      // Notification de succès via Toast global
       const actionText = newStatus ? "est désormais membre Élite" : "n'est plus membre Élite";
-      setToastMessage(`Le joueur ${user.first_name} ${user.last_name} ${actionText} !`);
-      
-      // Auto-hide toast
-      setTimeout(() => setToastMessage(null), 4000);
+      toast.success(`Le joueur ${user.first_name} ${user.last_name} ${actionText} !`);
     } catch (err) {
       console.error("Erreur bascule Élite :", err.message);
-      alert("Erreur lors de la modification du statut.");
+      toast.error("Erreur lors de la modification du statut. Veuillez réessayer.");
     }
   };
 
@@ -180,13 +179,7 @@ export default function AdminPanel({ onClose }) {
           )}
         </div>
 
-        {/* Toast Notification */}
-        {toastMessage && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm font-bold flex items-center gap-2 animate-slide-in backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-            <CheckCircle2 className="w-5 h-5" />
-            {toastMessage}
-          </div>
-        )}
+
 
       </div>
     </div>

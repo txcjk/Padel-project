@@ -1,7 +1,9 @@
 import { X, Shield, Swords, Mail, UserPlus, MapPin, Sparkles } from 'lucide-react'
 import PlayerCard from './PlayerCard'
+import { useToast } from './ToastProvider.jsx'
 
 export default function PlayerProfileModal({ player, onClose, onChallenge }) {
+  const toast = useToast()
   if (!player) return null
 
   // Ensure rank structures are compatible
@@ -93,7 +95,7 @@ export default function PlayerProfileModal({ player, onClose, onChallenge }) {
               Défier ce Joueur
             </button>
             <button 
-              onClick={() => alert(`Demande d'ami envoyée à ${player.firstName} !`)}
+              onClick={() => toast.success(`Demande d'ami envoyée à ${player.firstName} !`)}
               className="px-6 py-3.5 rounded-xl bg-zinc-800 border border-zinc-700/60 text-zinc-200 text-xs font-bold uppercase tracking-wider hover:bg-zinc-700 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <UserPlus className="w-4 h-4" />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import { useToast } from './components/ToastProvider.jsx'
 import Auth from './components/Auth'
 import DashboardHeader from './components/DashboardHeader.jsx'
 import PlayerCard from './components/PlayerCard.jsx'
@@ -138,7 +139,31 @@ const demoRecentMatches = [
   },
 ]
 
+// Helper: traduit les erreurs techniques en messages français lisibles
+const getFriendlyErrorMessage = (err) => {
+  const msg = (err?.message || err?.toString() || '').toLowerCase()
+  if (msg.includes('auth session missing') || msg.includes('not authenticated') || msg.includes('jwt expired') || msg.includes('refresh_token'))
+    return 'Session expirée. Veuillez vous reconnecter.'
+  if (msg.includes('409') || msg.includes('déjà complet') || msg.includes('already exists') || msg.includes('duplicate'))
+    return 'Ce match est déjà complet !'
+  if (msg.includes('participez déjà'))
+    return 'Vous participez déjà à ce match.'
+  if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch') || msg.includes('net::'))
+    return 'Connexion réseau perdue. Vérifiez votre connexion Internet.'
+  if (msg.includes('permission') || msg.includes('forbidden') || msg.includes('403'))
+    return "Vous n'avez pas les droits pour effectuer cette action."
+  if (msg.includes('not found') || msg.includes('404'))
+    return 'La ressource demandée est introuvable.'
+  if (msg.includes('rate limit') || msg.includes('429'))
+    return 'Trop de requêtes. Veuillez patienter quelques instants.'
+  // Si le message source est déjà explicite en français, le conserver
+  if (/^[A-ZÀ-ÖÙ-Ü]/.test(err?.message || '') && err.message.length < 120)
+    return err.message
+  return 'Une erreur est survenue. Veuillez réessayer dans quelques instants.'
+}
+
 export default function App() {
+  const toast = useToast()
   const [session, setSession] = useState(null)
   const [isDemo, setIsDemo] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
@@ -276,6 +301,7 @@ export default function App() {
       }
     } catch (err) {
       console.error("Erreur profil:", err.message)
+      toast.error("Impossible de charger votre profil. Données par défaut utilisées.")
       setUserProfile({
         ...demoUser,
         id: userId,
@@ -311,6 +337,7 @@ export default function App() {
       }
     } catch (err) {
       console.error("Erreur classement:", err.message)
+      toast.error("Impossible de charger le classement. Veuillez réessayer.")
     }
   }
 
@@ -341,6 +368,7 @@ export default function App() {
       }
     } catch (err) {
       console.error("Erreur matches urgents:", err.message)
+      toast.error("Impossible de charger les matchs urgents.")
     }
   }
 
@@ -414,6 +442,7 @@ export default function App() {
       }
     } catch (err) {
       console.error("Erreur matches récents:", err.message)
+      toast.error("Impossible de charger vos matchs récents.")
     }
   }
 
@@ -451,7 +480,7 @@ export default function App() {
       setUrgentMatches(prev => prev.filter(m => m.id !== matchId))
       setUserProfile(prev => ({ ...prev, matchesSaved: prev.matchesSaved + 1 }))
       setShowGLHFNudge(true)
-      alert("Félicitations ! Vous avez sauvé le match en Mode Démo.")
+      toast.success("Félicitations ! Vous avez sauvé le match en Mode Démo.")
       return
     }
 
@@ -502,10 +531,10 @@ export default function App() {
 
       await loadSupabaseData(userProfile.id)
       setShowGLHFNudge(true)
-      alert("Match sauvé avec succès ! GLHF !")
+      toast.success("Match sauvé avec succès ! GLHF !")
     } catch (err) {
       console.error("Erreur lors de la sauvegarde du match :", err.message)
-      alert(`Impossible de rejoindre le match : ${err.message}`)
+      toast.error(getFriendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -533,11 +562,11 @@ export default function App() {
 
       if (error) throw error
 
-      alert("Vos évaluations ont été soumises avec succès !")
+      toast.success("Vos évaluations ont été soumises avec succès !")
       await fetchRecentMatches(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de la soumission des avis :", err.message)
-      alert(`Impossible d'enregistrer les évaluations : ${err.message}`)
+      toast.error(getFriendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -591,11 +620,11 @@ export default function App() {
 
       if (error) throw error
 
-      alert("Le score a été enregistré et est en attente de consensus (4/4).")
+      toast.success("Le score a été enregistré et est en attente de consensus (4/4).")
       await fetchRecentMatches(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de la soumission du score :", err.message)
-      alert(`Impossible d'enregistrer le score : ${err.message}`)
+      toast.error(getFriendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -604,7 +633,7 @@ export default function App() {
   // Consensus handlers (Approve / Dispute)
   const handleApproveScore = async (matchId) => {
     if (isDemo) {
-      alert("Consensus 4/4 validé ! Le score est définitivement scellé.")
+      toast.success("Consensus 4/4 validé ! Le score est définitivement scellé.")
       setRecentMatches(prev => prev.map(m => {
         if (m.id === matchId) {
           const isAmical = m.type === 'Amical'
@@ -634,11 +663,11 @@ export default function App() {
 
       if (error) throw error
 
-      alert("Match validé ! Le score est scellé et l'Elo a été mis à jour.")
+      toast.success("Match validé ! Le score est scellé et l'Elo a été mis à jour.")
       await loadSupabaseData(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de la validation du match :", err.message)
-      alert(`Impossible d'valider le score : ${err.message}`)
+      toast.error(getFriendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -646,7 +675,7 @@ export default function App() {
 
   const handleDisputeScore = async (matchId) => {
     if (isDemo) {
-      alert("Litige enregistré. Le match est bloqué en attente d'arbitrage par le staff.")
+      toast.info("Litige enregistré. Le match est bloqué en attente d'arbitrage par le staff.")
       setRecentMatches(prev => prev.map(m => {
         if (m.id === matchId) {
           return {
@@ -667,13 +696,13 @@ export default function App() {
 
       if (error) throw error
 
-      alert("Contestation enregistrée ! Les ELO ont été rétablis et le match est en arbitrage.")
+      toast.success("Contestation enregistrée ! Les ELO ont été rétablis et le match est en arbitrage.")
       
       // Recharger les données pour refléter les changements ELO
       await loadSupabaseData(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de la contestation :", err.message)
-      alert(`Impossible d'enregistrer la contestation : ${err.message}`)
+      toast.error(getFriendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
@@ -682,7 +711,7 @@ export default function App() {
   const handleEmergencyCancel = async (matchId) => {
     if (isDemo) {
       setTimeout(() => {
-        alert("Vote 4/4 atteint. Le match a été annulé avec succès.")
+        toast.info("Vote 4/4 atteint. Le match a été annulé avec succès.")
         setRecentMatches(prev => prev.map(m => m.id === matchId ? { ...m, status: 'Cancelled' } : m))
       }, 500)
       return
@@ -697,22 +726,22 @@ export default function App() {
 
       if (error) throw error
 
-      alert("Le match a été annulé avec succès.")
+      toast.success("Le match a été annulé avec succès.")
       await fetchRecentMatches(userProfile.id)
     } catch (err) {
       console.error("Erreur lors de l'annulation :", err.message)
-      alert(`Impossible d'annuler le match : ${err.message}`)
+      toast.error(getFriendlyErrorMessage(err))
     } finally {
       setLoading(false)
     }
   }
 
   const handleProposeRematch = (match) => {
-    alert(`Formulaire de Revanche généré ! \nJoueurs pré-sélectionnés: Vous et ${match.players.length} autres.\nLieu: ${match.club}\nSélectionnez simplement une nouvelle date.`)
+    toast.success(`Formulaire de Revanche généré ! Joueurs pré-sélectionnés : Vous et ${match.players.length} autres à ${match.club}. Sélectionnez une nouvelle date.`)
   }
 
   const handleChallengePlayer = (player) => {
-    alert(`Défi envoyé avec succès à ${player.firstName} ${player.lastName} ! Une invitation a été envoyée par notification.`)
+    toast.success(`Défi envoyé avec succès à ${player.firstName} ${player.lastName} ! Une invitation a été envoyée.`)
     setSelectedPlayer(null)
   }
 

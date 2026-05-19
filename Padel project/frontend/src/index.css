@@ -119,3 +119,50 @@
     animation: card-shimmer 3s ease-in-out infinite;
   }
 }
+
+/* ============================================
+   Toast Notification Animations
+   ============================================ */
+@keyframes toast-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(80px) scale(0.92);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes toast-slide-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(80px) scale(0.92);
+    filter: blur(4px);
+  }
+}
+@keyframes toast-progress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.toast-enter {
+  animation: toast-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.toast-exit {
+  animation: toast-slide-out 0.3s cubic-bezier(0.55, 0, 1, 0.45) both;
+}
+
+@keyframes scale-up {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-scale-up {
+  animation: scale-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
