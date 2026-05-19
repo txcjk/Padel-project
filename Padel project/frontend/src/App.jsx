@@ -11,6 +11,7 @@ import Leaderboard from './components/Leaderboard.jsx'
 import ScoreInputModal from './components/ScoreInputModal.jsx'
 import GLHFNudgeModal from './components/GLHFNudgeModal.jsx'
 import ScoreApprovalBanner from './components/ScoreApprovalBanner.jsx'
+import MatchInvitationBanner from './components/MatchInvitationBanner.jsx'
 import PlayerProfileModal from './components/PlayerProfileModal.jsx'
 import CGU from './components/CGU.jsx'
 import PremiumSubscription from './components/PremiumSubscription.jsx'
@@ -178,6 +179,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [prefilledMatchData, setPrefilledMatchData] = useState(null)
+  const [pendingInvitations, setPendingInvitations] = useState([])
   const [activeChatRecipient, setActiveChatRecipient] = useState(null)
 
   // Review Modal States
@@ -264,9 +266,131 @@ export default function App() {
       fetchProfile(userId),
       fetchUrgentMatches(userId),
       fetchRecentMatches(userId),
-      fetchLeaderboard()
+      fetchLeaderboard(),
+      fetchPendingInvitations(userId)
     ])
     setLoading(false)
+  }
+
+  const fetchPendingInvitations = async (userId) => {
+    try {
+      if (isDemo) {
+        setPendingInvitations([
+          {
+            id: 'demo-inv-1',
+            match_id: 'demo-m1',
+            status: 'pending_confirmation',
+            matches: {
+              id: 'demo-m1',
+              club: '4Padels Bordeaux',
+              scheduled_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+              creator_id: 'demo-u2',
+              profiles: {
+                first_name: 'Ludovic',
+                last_name: 'Simon'
+              }
+            }
+          }
+        ])
+        return
+      }
+      
+      const { data, error } = await supabase
+        .from('match_participations')
+        .select(`
+          id,
+          match_id,
+          status,
+          matches (
+            id,
+            club,
+            scheduled_at,
+            creator_id,
+            profiles:creator_id (
+              first_name,
+              last_name
+            )
+          )
+        `)
+        .eq('player_id', userId)
+        .eq('status', 'pending_confirmation')
+
+      if (error) throw error
+      
+      if (data && data.length > 0) {
+        data.forEach(inv => {
+          const alreadyLoaded = pendingInvitations.some(p => p.id === inv.id)
+          if (!alreadyLoaded) {
+            const creatorName = inv.matches?.profiles?.first_name || 'Un joueur'
+            const dateStr = new Date(inv.matches?.scheduled_at).toLocaleDateString('fr-FR')
+            const clubStr = inv.matches?.club || 'Club'
+            toast.info(`${creatorName} vous a ajouté au match du ${dateStr} au ${clubStr}. Confirmez-vous le match ?`)
+          }
+        })
+        setPendingInvitations(data)
+      } else {
+        setPendingInvitations([])
+      }
+    } catch (err) {
+      console.warn("Impossible de charger les invitations (fail silent) :", err.message)
+      setPendingInvitations([])
+    }
+  }
+
+  const handleConfirmInvitation = async (invId, matchId) => {
+    try {
+      if (isDemo) {
+        toast.success("Invitation acceptée avec succès (Mode Démo) !")
+        setPendingInvitations(prev => prev.filter(inv => inv.id !== invId))
+      } else {
+        const { error } = await supabase
+          .from('match_participations')
+          .update({ status: 'confirmed' })
+          .eq('id', invId)
+        
+        if (error) throw error
+
+        toast.success("Vous avez confirmé votre participation au match !")
+        
+        if (session?.user) {
+          await Promise.all([
+            fetchRecentMatches(session.user.id),
+            fetchPendingInvitations(session.user.id)
+          ])
+        }
+      }
+    } catch (err) {
+      console.error("Erreur confirmation invitation:", err.message)
+      toast.error("Impossible de confirmer l'invitation.")
+    }
+  }
+
+  const handleDeclineInvitation = async (invId, matchId) => {
+    try {
+      if (isDemo) {
+        toast.info("Invitation déclinée (Mode Démo).")
+        setPendingInvitations(prev => prev.filter(inv => inv.id !== invId))
+      } else {
+        const { error } = await supabase
+          .from('match_participations')
+          .delete()
+          .eq('id', invId)
+
+        if (error) throw error
+
+        toast.info("Vous avez décliné l'invitation.")
+        
+        if (session?.user) {
+          await Promise.all([
+            fetchRecentMatches(session.user.id),
+            fetchPendingInvitations(session.user.id)
+          ])
+        }
+      }
+    } catch (err) {
+      console.error("Erreur refus invitation:", err.message)
+      toast.error("Impossible de décliner l'invitation.")
+    }
   }
 
   // --- Supabase Data Fetching Functions ---
@@ -890,6 +1014,23 @@ export default function App() {
     setUrgentMatches(demoUrgentMatches)
     setRecentMatches(demoRecentMatches)
     setLeaderboardPlayers(demoLeaderboard)
+    setPendingInvitations([
+      {
+        id: 'demo-inv-1',
+        match_id: 'demo-m1',
+        status: 'pending_confirmation',
+        matches: {
+          id: 'demo-m1',
+          club: '4Padels Bordeaux',
+          scheduled_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+          creator_id: 'demo-u2',
+          profiles: {
+            first_name: 'Ludovic',
+            last_name: 'Simon'
+          }
+        }
+      }
+    ])
     setLoading(false)
   }
 
@@ -1027,6 +1168,17 @@ export default function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         
+        {/* Invitations en attente */}
+        {pendingInvitations.length > 0 && (
+          <section className="mt-6">
+            <MatchInvitationBanner 
+              invitations={pendingInvitations}
+              onConfirm={handleConfirmInvitation}
+              onDecline={handleDeclineInvitation}
+            />
+          </section>
+        )}
+
         {/* Consensus banner if any pending validation */}
         {recentMatches.filter(m => m.status === 'Pending_Validation').length > 0 && (
           <section className="mt-6">
