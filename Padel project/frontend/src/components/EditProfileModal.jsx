@@ -90,7 +90,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in font-sans">
       
       {/* Outer panel with neon dual gradients */}
-      <div className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(139,92,246,0.15)] flex flex-col md:flex-row animate-scale-up max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible">
+      <div className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(139,92,246,0.15)] flex flex-col md:flex-row animate-scale-up max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible [-webkit-overflow-scrolling:touch]">
         
         {/* Close Button */}
         <button 
@@ -115,7 +115,7 @@ export default function EditProfileModal({ user, onClose, onSave }) {
         </div>
 
         {/* RIGHT COLUMN: EDIT FORM */}
-        <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[80vh] md:max-h-[85vh]">
+        <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto max-h-[80vh] md:max-h-[85vh] [-webkit-overflow-scrolling:touch]">
           
           <div>
             <div className="space-y-1 mb-5">

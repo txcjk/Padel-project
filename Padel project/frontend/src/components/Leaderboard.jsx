@@ -80,7 +80,7 @@ export default function Leaderboard({ players, currentUser, onSelectPlayer, curr
       </div>
 
       {/* Scrollable List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1.5">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 space-y-1.5 [overscroll-behavior:contain] [-webkit-overflow-scrolling:touch]">
         {filteredPlayers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-zinc-500 space-y-2">
             <Swords className="w-8 h-8 opacity-50" />

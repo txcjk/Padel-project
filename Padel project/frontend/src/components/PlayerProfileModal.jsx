@@ -1,17 +1,37 @@
+import { useEffect } from 'react'
 import { X, Shield, Swords, Mail, UserPlus, MapPin, Sparkles } from 'lucide-react'
 import PlayerCard from './PlayerCard'
 import { useToast } from './ToastProvider.jsx'
 
 export default function PlayerProfileModal({ player, onClose, onChallenge }) {
   const toast = useToast()
+
+  // Lock body scroll on mount and restore on unmount
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = originalOverflow || ''
+    }
+  }, [])
+
   if (!player) return null
 
   // Ensure rank structures are compatible
   const rankLabel = typeof player.rank === 'object' ? player.rank.label : player.rank || 'Bronze'
 
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-850 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col md:flex-row animate-scale-up">
+    <div 
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto py-8 md:items-center -webkit-overflow-scrolling: touch"
+    >
+      <div className="relative w-full max-w-4xl bg-zinc-900 border border-zinc-850 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col md:flex-row animate-scale-up my-auto">
         
         {/* Close Button */}
         <button 

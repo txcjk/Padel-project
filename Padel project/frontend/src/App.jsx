@@ -839,24 +839,29 @@ export default function App() {
   const handleApproveScore = async (matchId) => {
     if (isDemo) {
       toast.success("Consensus 4/4 validé ! Le score est définitivement scellé.")
+      let isCasual = false
       setRecentMatches(prev => prev.map(m => {
         if (m.id === matchId) {
-          const isAmical = m.type === 'Amical'
+          const matchIsCasual = m.type === 'Casual' || m.type === 'Amical'
+          if (matchIsCasual) isCasual = true
           return {
             ...m,
             status: 'Completed',
-            eloChange: isAmical ? 0 : 16, // +16 Elo for validation success
+            eloChange: 0, // 0 Elo change for casual match validation success
             needsReview: true
           }
         }
         return m
       }))
-      // Boost user profile elo slightly for demo effect
-      setUserProfile(prev => ({
-        ...prev,
-        elo: prev.elo + 16,
-        rank: getRankFromElo(prev.elo + 16)
-      }))
+      
+      // Boost user profile elo slightly for demo effect only if it's NOT a casual/amical match
+      if (!isCasual) {
+        setUserProfile(prev => ({
+          ...prev,
+          elo: prev.elo + 16,
+          rank: getRankFromElo(prev.elo + 16)
+        }))
+      }
       return
     }
 
@@ -1100,7 +1105,7 @@ export default function App() {
       {/* Sticky Premium Tab Bar */}
       <div className="sticky top-16 z-40 w-full bg-zinc-950/70 backdrop-blur-md border-b border-zinc-900/60 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex items-center justify-start md:justify-center overflow-x-auto py-2.5 gap-2 md:gap-4 scrollbar-none">
+          <nav className="flex items-center justify-start md:justify-center overflow-x-auto py-2.5 gap-2 md:gap-4 scrollbar-none [-webkit-overflow-scrolling:touch]">
             
             <button
               onClick={() => { setActiveTab('dashboard'); setPrefilledMatchData(null); }}

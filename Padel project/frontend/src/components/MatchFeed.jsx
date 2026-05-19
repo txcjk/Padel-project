@@ -1,7 +1,7 @@
 import { Trophy, MapPin, Clock, TrendingUp, TrendingDown, Minus, Star, Swords, AlertOctagon, CheckCircle2, XCircle } from 'lucide-react'
 import { useState } from 'react'
 
-function EloChangeTag({ change }) {
+function EloChangeTag({ change, matchType }) {
   if (change > 0) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-xs font-bold">
@@ -16,9 +16,10 @@ function EloChangeTag({ change }) {
       </span>
     )
   }
+  const label = (matchType === 'Casual' || matchType === 'Amical') ? 'Match Amical' : 'Elo: +0'
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-700/30 border border-zinc-700/30 text-zinc-500 text-xs font-medium">
-      <Minus className="w-3 h-3" />Amical
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-800 border border-zinc-700/50 text-zinc-400 text-xs font-medium">
+      <Minus className="w-3 h-3" />{label}
     </span>
   )
 }
@@ -80,7 +81,7 @@ function MatchCard({ match, onOpenReview, onOpenScore, onEmergencyCancel }) {
             </div>
           </div>
         </div>
-        {!isActive && <EloChangeTag change={match.eloChange} />}
+        {!isActive && <EloChangeTag change={match.eloChange} matchType={match.type} />}
       </div>
 
       {/* Score display for Completed matches */}
