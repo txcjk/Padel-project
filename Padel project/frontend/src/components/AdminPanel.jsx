@@ -30,17 +30,21 @@ export default function AdminPanel({ onClose }) {
   const handleToggleElite = async (user) => {
     try {
       const newStatus = !user.is_elite;
-      const { error } = await supabase.rpc('admin_toggle_elite', {
+      const { data, error } = await supabase.rpc('admin_toggle_elite', {
         p_user_id: user.id,
         p_is_elite: newStatus
       });
 
       if (error) throw error;
 
-      // Mise à jour de l'état local
-      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, is_elite: newStatus } : u));
-      
-      // Notification de succès via Toast global
+      // Validate RPC JSONB response — the function returns {success, error} on failure
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Mise à jour échouée');
+      }
+
+      // Re-fetch users from DB to guarantee state matches persisted data
+      await fetchUsers();
+
       const actionText = newStatus ? "est désormais membre Élite" : "n'est plus membre Élite";
       toast.success(`Le joueur ${user.first_name} ${user.last_name} ${actionText} !`);
     } catch (err) {

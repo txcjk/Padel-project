@@ -1,5 +1,4 @@
 import { Crown, Medal, MapPin, Star, Shield, Trophy } from 'lucide-react'
-// Note: Crown is only used for rank #1 badge, not for Elite indicator
 
 // FIFA Tier definitions with internal metallic material styles
 const rankStyles = {
@@ -94,11 +93,11 @@ export default function PlayerCard({ user }) {
             </div>
           )}
 
-          {/* Achievement Badges — top-left corner, minimal icons */}
-          <div className="absolute top-[18%] left-[15%] z-20 flex flex-col items-center gap-1.5">
+          {/* Achievement Badges — top-left corner, minimal object icons */}
+          <div className="absolute top-[18%] left-[15%] z-20 flex items-center gap-1">
             {isElite && (
-              <div className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-400/30 flex items-center justify-center">
-                <Crown className="w-2.5 h-2.5 text-violet-400" />
+              <div className="w-5 h-5 rounded-full bg-zinc-500/20 border border-zinc-400/30 flex items-center justify-center">
+                <Crown className="w-2.5 h-2.5 text-zinc-300" />
               </div>
             )}
             {user.hasExplorerBadge && (

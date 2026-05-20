@@ -287,21 +287,6 @@ export default function App() {
     return dbRanks
   }, [isDemo, dbRanks, clientRanks])
 
-  const competitiveTitle = useMemo(() => {
-    if (!userProfile) return null
-    const { cityRank, regionRank, nationalRank } = competitiveRanks
-    
-    const userCity = (userProfile.city || '').trim()
-    if (cityRank <= 5 && userCity) {
-      return `Maître de ${userCity}`
-    } else if (regionRank <= 50) {
-      return 'Leader Régional'
-    } else if (nationalRank <= 100) {
-      return 'Légende France'
-    }
-    return null
-  }, [competitiveRanks, userProfile])
-
   const badgeStats = useMemo(() => {
     const completedMatches = recentMatches.filter(m => 
       m.status === 'Completed' || m.status === 'Full' || m.status === 'Pending_Validation'
@@ -1616,7 +1601,7 @@ export default function App() {
 
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-4 space-y-6">
-                <PlayerCard user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank, isElite, competitiveTitle, globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+                <PlayerCard user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank, isElite, globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11, hasExplorerBadge: badgeStats.clubsCount >= 3, hasVeteranBadge: recentMatches.filter(m => m.status === 'Completed' || m.status === 'Full').length >= 10 }} />
                 <DefisNationaux challenges={challenges} />
                 <BadgesGrid stats={badgeStats} isElite={isElite} />
               </div>
