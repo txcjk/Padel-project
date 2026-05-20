@@ -23,7 +23,7 @@ const getTierTextGlow = (tierColor) => {
   return styles[tierColor] || styles.bronze
 }
 
-export default function Leaderboard({ players, currentUser, onSelectPlayer, currentUserIsElite }) {
+export default function Leaderboard({ players, currentUser, onSelectPlayer, currentUserIsElite, onConsultRegion }) {
   const [activeTab, setActiveTab] = useState('Général')
 
   // Sort and filter players (memoized)
@@ -57,7 +57,12 @@ export default function Leaderboard({ players, currentUser, onSelectPlayer, curr
           {['Général', 'Par Région', 'Par Club'].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                setActiveTab(tab);
+                if (tab === 'Par Région' && onConsultRegion) {
+                  onConsultRegion();
+                }
+              }}
               className={`flex-1 py-2 rounded-lg text-[11px] font-bold tracking-wider uppercase transition-all duration-200 ${
                 activeTab === tab
                   ? 'bg-zinc-800 text-zinc-100 shadow-md border border-zinc-700/30'

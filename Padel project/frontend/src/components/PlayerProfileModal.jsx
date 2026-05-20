@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { X, Shield, Swords, Mail, UserPlus, MapPin, Sparkles } from 'lucide-react'
 import PlayerCard from './PlayerCard'
+import BadgesGrid from './BadgesGrid'
 import { useToast } from './ToastProvider.jsx'
 
 export default function PlayerProfileModal({ player, onClose, onChallenge }) {
@@ -95,6 +96,16 @@ export default function PlayerProfileModal({ player, onClose, onChallenge }) {
                 </div>
               </div>
             </div>
+
+            {/* Badges Grid (Explorer Pack) */}
+            <BadgesGrid 
+              stats={player.badgeStats || player.stats || {
+                clubsCount: player.clubsCount || 0,
+                regionsCount: player.regionsCount || 0,
+                hasDefeatedHighElo: player.hasDefeatedHighElo || false
+              }} 
+              isElite={player.isElite === true} 
+            />
 
             {/* Gamification statement */}
             <div className="p-4 rounded-xl bg-zinc-950/30 border border-zinc-850/60 flex items-start gap-3">

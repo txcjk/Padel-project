@@ -25,6 +25,8 @@ import CreateMatch from './components/CreateMatch.jsx'
 import Bookings from './components/Bookings.jsx'
 import Chat from './components/Chat.jsx'
 import Tournaments from './components/Tournaments.jsx'
+import BadgesGrid from './components/BadgesGrid.jsx'
+import DefisNationaux from './components/DefisNationaux.jsx'
 
 // Helpers
 const getRankFromElo = (elo) => {
@@ -197,11 +199,208 @@ export default function App() {
   const [showRankedLimit, setShowRankedLimit] = useState(false)
   const [showAdminPanel, setShowAdminPanel] = useState(false)
 
+  // Gamification States
+  const [hasConsultedRegion, setHasConsultedRegion] = useState(false)
+  const [dbRanks, setDbRanks] = useState(null)
+
   // Admin access check
   const isAdmin = session?.user?.email === 'ludow3b@gmail.com'
 
   // Elite status — connected to Supabase is_elite column
   const isElite = userProfile?.isElite === true
+
+  // Fetch real competitive ranks from Supabase in Live mode
+  useEffect(() => {
+    if (!session || !userProfile || isDemo) return
+
+    const getDbRanks = async () => {
+      try {
+        const myElo = userProfile.elo
+        const myCity = userProfile.city || 'Bordeaux'
+        const myRegion = userProfile.region || 'Nouvelle-Aquitaine'
+
+        const { count: cityRankCount, error: cityErr } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('city', myCity)
+          .gt('elo_rating', myElo)
+
+        const { count: regionRankCount, error: regionErr } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('region', myRegion)
+          .gt('elo_rating', myElo)
+
+        const { count: nationalRankCount, error: nationalErr } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .gt('elo_rating', myElo)
+
+        if (!cityErr && !regionErr && !nationalErr) {
+          setDbRanks({
+            cityRank: (cityRankCount ?? 0) + 1,
+            regionRank: (regionRankCount ?? 0) + 1,
+            nationalRank: (nationalRankCount ?? 0) + 1
+          })
+        }
+      } catch (err) {
+        console.error("Erreur de calcul des rangs DB:", err)
+      }
+    }
+
+    getDbRanks()
+  }, [session, userProfile?.elo, userProfile?.city, userProfile?.region, isDemo])
+
+  // client-side fallbacks for ranks in Demo mode or when DB Ranks are not loaded yet
+  const clientRanks = useMemo(() => {
+    if (!userProfile) return { cityRank: 11, regionRank: 55, nationalRank: 101 }
+    
+    const myElo = userProfile.elo
+    const myCity = userProfile.city || 'Bordeaux'
+    const myRegion = userProfile.region || 'Nouvelle-Aquitaine'
+
+    const playersInFrance = leaderboardPlayers
+    const playersInRegion = leaderboardPlayers.filter(p => p.region === myRegion)
+    const playersInCity = leaderboardPlayers.filter(p => p.city === myCity)
+
+    const nationalRank = playersInFrance.filter(p => p.elo > myElo).length + 1
+    const regionRank = playersInRegion.filter(p => p.elo > myElo).length + 1
+    const cityRank = playersInCity.filter(p => p.elo > myElo).length + 1
+
+    return { cityRank, regionRank, nationalRank }
+  }, [leaderboardPlayers, userProfile])
+
+  const competitiveRanks = useMemo(() => {
+    if (isDemo || !dbRanks) return clientRanks
+    return dbRanks
+  }, [isDemo, dbRanks, clientRanks])
+
+  const competitiveTitle = useMemo(() => {
+    if (!userProfile) return null
+    const { cityRank, regionRank, nationalRank } = competitiveRanks
+    
+    if (cityRank <= 5) {
+      return `Maître de ${userProfile.city || 'Bordeaux'}`
+    } else if (regionRank <= 50) {
+      return 'Leader Régional'
+    } else if (nationalRank <= 100) {
+      return 'Légende France'
+    }
+    return null
+  }, [competitiveRanks, userProfile])
+
+  const badgeStats = useMemo(() => {
+    const completedMatches = recentMatches.filter(m => 
+      m.status === 'Completed' || m.status === 'Full' || m.status === 'Pending_Validation'
+    )
+    
+    const distinctClubs = new Set(
+      completedMatches.map(m => m.club).filter(Boolean)
+    )
+    const clubsCount = distinctClubs.size
+
+    const clubToRegion = {
+      '4Padels Bordeaux': 'Nouvelle-Aquitaine',
+      '4PADEL Bordeaux': 'Nouvelle-Aquitaine',
+      '¡HOLA! PADEL': 'Nouvelle-Aquitaine',
+      'Padel Touch Arcachon': 'Nouvelle-Aquitaine',
+      'Padel Arena Rouen': 'Normandie',
+      'Padel Arena': 'Nouvelle-Aquitaine',
+      'Padel Horizon': 'Île-de-France',
+      'Casa Padel': 'Île-de-France'
+    }
+    
+    const distinctRegions = new Set(
+      completedMatches.map(m => {
+        if (!m.club) return null
+        return clubToRegion[m.club] || 'Nouvelle-Aquitaine'
+      }).filter(Boolean)
+    )
+    if (completedMatches.length > 0 && userProfile?.region) {
+      distinctRegions.add(userProfile.region)
+    }
+    const regionsCount = distinctRegions.size
+
+    const hasDefeatedHighElo = completedMatches.some(m => {
+      return m.hasDefeatedHighElo === true || (m.eloChange > 25 && m.type === 'Ranked')
+    })
+
+    return {
+      clubsCount,
+      regionsCount,
+      hasDefeatedHighElo
+    }
+  }, [recentMatches, userProfile])
+
+  const challenges = useMemo(() => {
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    
+    const rankedThisMonth = recentMatches.filter(m => {
+      if (m.type !== 'Ranked') return false
+      const matchDate = new Date(m.rawDate || m.date)
+      return matchDate >= startOfMonth
+    }).length
+    const challenge1Progress = Math.min(rankedThisMonth, 1)
+
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    
+    const eloGained = recentMatches.reduce((sum, m) => {
+      if (m.type !== 'Ranked' || m.eloChange <= 0) return sum
+      const matchDate = new Date(m.rawDate || m.date)
+      if (matchDate >= sevenDaysAgo) {
+        return sum + m.eloChange
+      }
+      return sum
+    }, 0)
+    const challenge2Progress = Math.min(eloGained, 30)
+
+    const challenge3Progress = hasConsultedRegion ? 1 : 0
+
+    return [
+      {
+        id: 'challenge-1',
+        label: 'Disputer 1 match Ranked ce mois-ci',
+        progress: challenge1Progress,
+        target: 1,
+        unit: 'match',
+        percentage: (challenge1Progress / 1) * 100
+      },
+      {
+        id: 'challenge-2',
+        label: 'Accumuler 30 points Elo en mode compétition',
+        progress: challenge2Progress,
+        target: 30,
+        unit: 'Elo',
+        percentage: (challenge2Progress / 30) * 100
+      },
+      {
+        id: 'challenge-3',
+        label: 'Consulter le sommet du classement de ma Région',
+        progress: challenge3Progress,
+        target: 1,
+        unit: 'visite',
+        percentage: (challenge3Progress / 1) * 100
+      }
+    ]
+  }, [recentMatches, hasConsultedRegion])
+
+  const handleSelectPlayer = (player) => {
+    const seed = player.id.charCodeAt(0) + player.id.charCodeAt(player.id.length - 1)
+    const clubsCount = (seed % 3) + 1
+    const regionsCount = (seed % 2) + 1
+    const hasDefeatedHighElo = seed % 3 === 0
+    
+    setSelectedPlayer({
+      ...player,
+      badgeStats: {
+        clubsCount,
+        regionsCount,
+        hasDefeatedHighElo
+      }
+    })
+  }
 
   // 1. Elo Decay calculation
   const eloDecayStatus = useMemo(() => {
@@ -970,7 +1169,8 @@ export default function App() {
           return {
             ...m,
             status: 'Completed',
-            eloChange: 0, // 0 Elo change for casual match validation success
+            eloChange: matchId === 'demo-r_pending' ? 32 : 16,
+            hasDefeatedHighElo: matchId === 'demo-r_pending' ? true : false,
             needsReview: true
           }
         }
@@ -979,10 +1179,11 @@ export default function App() {
       
       // Boost user profile elo slightly for demo effect only if it's NOT a casual/amical match
       if (!isCasual) {
+        const eloGain = matchId === 'demo-r_pending' ? 32 : 16
         setUserProfile(prev => ({
           ...prev,
-          elo: prev.elo + 16,
-          rank: getRankFromElo(prev.elo + 16)
+          elo: prev.elo + eloGain,
+          rank: getRankFromElo(prev.elo + eloGain)
         }))
       }
       return
@@ -1377,8 +1578,10 @@ export default function App() {
             </section>
 
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-              <div className="lg:col-span-4">
-                <PlayerCard user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank, isElite, globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+              <div className="lg:col-span-4 space-y-6">
+                <PlayerCard user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank, isElite, competitiveTitle, globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+                <DefisNationaux challenges={challenges} />
+                <BadgesGrid stats={badgeStats} isElite={isElite} />
               </div>
 
               <div className="lg:col-span-8">
@@ -1392,7 +1595,13 @@ export default function App() {
             </div>
             
             <section>
-              <Leaderboard players={effectiveLeaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} currentUserIsElite={isElite} />
+              <Leaderboard 
+                players={effectiveLeaderboardPlayers} 
+                currentUser={userProfile} 
+                onSelectPlayer={handleSelectPlayer} 
+                currentUserIsElite={isElite} 
+                onConsultRegion={() => setHasConsultedRegion(true)}
+              />
             </section>
 
             <section>

@@ -159,6 +159,11 @@ export default function PlayerCard({ user }) {
             <h2 className="font-display font-black text-lg uppercase tracking-widest text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] truncate">
               {user.firstName} {user.lastName}
             </h2>
+            {user.competitiveTitle && (
+              <span className="text-[9px] text-violet-400 uppercase tracking-widest font-bold block mt-1">
+                {user.competitiveTitle}
+              </span>
+            )}
             <div className="flex items-center justify-center gap-1 mt-0.5 opacity-90 drop-shadow-md">
               <span className="text-[10px]">🏟️</span>
               <span className="text-[9px] font-extrabold text-white uppercase tracking-widest truncate max-w-[170px]">
