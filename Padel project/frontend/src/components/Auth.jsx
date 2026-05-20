@@ -156,7 +156,7 @@ export default function Auth({ onDemoLogin }) {
             <img 
               src="/logo.png" 
               alt="elomatch - Competitive Padel Hub" 
-              className="h-28 w-auto object-contain"
+              className="h-[10.5rem] w-auto object-contain"
               loading="eager"
             />
           </div>
