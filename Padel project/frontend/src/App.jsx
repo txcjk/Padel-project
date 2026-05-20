@@ -507,7 +507,7 @@ export default function App() {
             
           if (error) throw error
           
-          toast.info(`📉 Pénalité d'inactivité appliquée : -${penalty} Elo. Jouez un match Classé pour stopper la dégradation !`)
+          toast.info(`📉 Pénalité d'inactivité appliquée : -15 Elo (identique pour tous). Jouez un match Classé pour stopper la dégradation !`)
           
           // Re-fetch profile to sync state
           await fetchProfile(session.user.id)
@@ -1584,7 +1584,7 @@ export default function App() {
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-250 text-xs font-semibold flex items-center gap-3 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.1)] mt-6">
                 <span className="text-lg">⚠️</span>
                 <p className="flex-1 leading-relaxed text-zinc-300">
-                  <span className="font-extrabold text-amber-400">Inactivité :</span> Sans match <span className="underline">Ranked</span> sous <span className="font-extrabold text-amber-300">{eloDecayStatus.daysRemaining} jours</span>, vous perdrez <span className="font-extrabold text-red-400">15 points Elo</span>.
+                  <span className="font-extrabold text-amber-400">Inactivité :</span> Sans match <span className="underline">Ranked</span> sous <span className="font-extrabold text-amber-300">{isElite ? '15' : '10'} jours</span>, vous perdrez <span className="font-extrabold text-red-400">15 points Elo</span>.
                 </p>
                 <button
                   onClick={() => setActiveTab('create-match')}
@@ -1599,7 +1599,7 @@ export default function App() {
               <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-250 text-xs font-semibold flex items-center gap-3 shadow-[0_0_20px_rgba(239,68,68,0.1)] mt-6">
                 <span className="text-lg animate-bounce">📉</span>
                 <p className="flex-1 leading-relaxed text-zinc-300">
-                  <span className="font-extrabold text-red-400">Pénalité d'inactivité :</span> -{eloDecayStatus.penaltyElo} points Elo par cycle d'inactivité accumulé. Jouez un match Classé pour stopper la dégradation !
+                  <span className="font-extrabold text-red-400">Pénalité d'inactivité :</span> -15 points Elo. Pénalité identique pour tous les joueurs, sans exception. Jouez un match Classé pour stopper la dégradation !
                 </p>
                 <button
                   onClick={() => setActiveTab('create-match')}

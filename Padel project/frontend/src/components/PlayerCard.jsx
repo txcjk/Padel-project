@@ -1,4 +1,4 @@
-import { Crown, Medal } from 'lucide-react'
+import { Crown, Medal, MapPin, Star, Shield, Trophy } from 'lucide-react'
 // Note: Crown is only used for rank #1 badge, not for Elite indicator
 
 // FIFA Tier definitions with internal metallic material styles
@@ -94,14 +94,24 @@ export default function PlayerCard({ user }) {
             </div>
           )}
 
-          {/* Elite Text Badge — top-right corner, clean typography */}
-          {isElite && (
-            <div className="absolute top-[15%] right-[10%] z-20">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
-                ÉLITE
-              </span>
-            </div>
-          )}
+          {/* Achievement Badges — top-left corner, minimal icons */}
+          <div className="absolute top-[16%] left-[10%] z-20 flex flex-col items-center gap-1">
+            {isElite && (
+              <div className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-400/30 flex items-center justify-center">
+                <Crown className="w-2.5 h-2.5 text-violet-400" />
+              </div>
+            )}
+            {user.hasExplorerBadge && (
+              <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+                <MapPin className="w-2.5 h-2.5 text-emerald-400" />
+              </div>
+            )}
+            {user.hasVeteranBadge && (
+              <div className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
+                <Shield className="w-2.5 h-2.5 text-amber-400" />
+              </div>
+            )}
+          </div>
 
           {/* 1. TOP HEADER: Centered Elo Rating */}
           <div className="flex flex-col items-center pt-3 z-10">
@@ -159,11 +169,6 @@ export default function PlayerCard({ user }) {
             <h2 className="font-display font-black text-lg uppercase tracking-widest text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] truncate">
               {user.firstName} {user.lastName}
             </h2>
-            {user.competitiveTitle && (
-              <span className="text-[9px] text-violet-400 uppercase tracking-widest font-bold block mt-1">
-                {user.competitiveTitle}
-              </span>
-            )}
             <div className="flex items-center justify-center gap-1 mt-0.5 opacity-90 drop-shadow-md">
               <span className="text-[10px]">🏟️</span>
               <span className="text-[9px] font-extrabold text-white uppercase tracking-widest truncate max-w-[170px]">
