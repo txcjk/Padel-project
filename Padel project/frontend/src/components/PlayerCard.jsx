@@ -231,14 +231,7 @@ export default function PlayerCard({ user }) {
 
           </div>
 
-          {/* Player ID — absolute bottom center of the card */}
-          {user.playerTag && (
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-25 text-center">
-              <span className="text-[9px] font-mono text-zinc-600 tracking-wider uppercase">
-                {user.playerTag}
-              </span>
-            </div>
-          )}
+
 
         </div>
       </div>
