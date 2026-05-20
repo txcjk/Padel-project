@@ -1,4 +1,4 @@
-import { Compass, Map, Swords, Sparkles, Check } from 'lucide-react';
+import { Compass, Map, Swords, Check } from 'lucide-react';
 
 export default function BadgesGrid({ stats = {}, isElite = false }) {
   // Extract and default achievement stats
@@ -50,7 +50,6 @@ export default function BadgesGrid({ stats = {}, isElite = false }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="font-display font-extrabold text-sm text-zinc-150 uppercase tracking-wider flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-neon-violet" />
           Explorer Pack Badges
         </h3>
         {isElite && (

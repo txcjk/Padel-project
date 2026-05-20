@@ -1,4 +1,4 @@
-import { Trophy, Compass, Swords, Sparkles, Check } from 'lucide-react';
+import { Trophy, Compass, Swords, Check } from 'lucide-react';
 
 export default function DefisNationaux({ challenges = [] }) {
   return (
@@ -75,7 +75,6 @@ export default function DefisNationaux({ challenges = [] }) {
 
       {/* Reward description */}
       <div className="pt-1.5 flex items-center gap-2 border-t border-zinc-850/60 text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">
-        <Sparkles className="w-3.5 h-3.5 text-neon-violet shrink-0" />
         <span>Complétez les défis pour gagner en notoriété !</span>
       </div>
     </div>
