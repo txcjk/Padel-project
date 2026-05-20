@@ -95,7 +95,7 @@ export default function PlayerCard({ user }) {
           )}
 
           {/* Achievement Badges — top-left corner, minimal icons */}
-          <div className="absolute top-[16%] left-[10%] z-20 flex flex-col items-center gap-1">
+          <div className="absolute top-[18%] left-[15%] z-20 flex flex-col items-center gap-1.5">
             {isElite && (
               <div className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-400/30 flex items-center justify-center">
                 <Crown className="w-2.5 h-2.5 text-violet-400" />
