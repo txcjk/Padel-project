@@ -212,39 +212,49 @@ export default function App() {
   // Fetch real competitive ranks from Supabase in Live mode
   useEffect(() => {
     if (!session || !userProfile || isDemo) return
+    // Don't run rank queries if core user data isn't available
+    if (!userProfile.elo && userProfile.elo !== 0) return
 
     const getDbRanks = async () => {
       try {
-        const myElo = userProfile.elo
-        const myCity = userProfile.city || 'Bordeaux'
-        const myRegion = userProfile.region || 'Nouvelle-Aquitaine'
+        const myElo = userProfile.elo ?? 1000
+        const myCity = (userProfile.city || '').trim()
+        const myRegion = (userProfile.region || '').trim()
 
-        const { count: cityRankCount, error: cityErr } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('city', myCity)
-          .gt('elo_rating', myElo)
+        let cityRank = 999
+        let regionRank = 999
+        let nationalRank = 999
 
-        const { count: regionRankCount, error: regionErr } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('region', myRegion)
-          .gt('elo_rating', myElo)
-
-        const { count: nationalRankCount, error: nationalErr } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gt('elo_rating', myElo)
-
-        if (!cityErr && !regionErr && !nationalErr) {
-          setDbRanks({
-            cityRank: (cityRankCount ?? 0) + 1,
-            regionRank: (regionRankCount ?? 0) + 1,
-            nationalRank: (nationalRankCount ?? 0) + 1
-          })
+        // City rank — only query if user has a city set
+        if (myCity) {
+          const { count, error } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('city', myCity)
+            .gt('elo_rating', myElo)
+          if (!error) cityRank = (count ?? 0) + 1
         }
+
+        // Region rank — only query if user has a region set
+        if (myRegion) {
+          const { count, error } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('region', myRegion)
+            .gt('elo_rating', myElo)
+          if (!error) regionRank = (count ?? 0) + 1
+        }
+
+        // National rank
+        const { count: natCount, error: natErr } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .gt('elo_rating', myElo)
+        if (!natErr) nationalRank = (natCount ?? 0) + 1
+
+        setDbRanks({ cityRank, regionRank, nationalRank })
       } catch (err) {
-        console.error("Erreur de calcul des rangs DB:", err)
+        console.warn("Erreur de calcul des rangs DB (non-bloquante):", err?.message || err)
       }
     }
 
@@ -255,17 +265,19 @@ export default function App() {
   const clientRanks = useMemo(() => {
     if (!userProfile) return { cityRank: 11, regionRank: 55, nationalRank: 101 }
     
-    const myElo = userProfile.elo
-    const myCity = userProfile.city || 'Bordeaux'
-    const myRegion = userProfile.region || 'Nouvelle-Aquitaine'
+    const myElo = userProfile.elo ?? 1000
+    const myCity = (userProfile.city || '').trim()
+    const myRegion = (userProfile.region || '').trim()
 
-    const playersInFrance = leaderboardPlayers
-    const playersInRegion = leaderboardPlayers.filter(p => p.region === myRegion)
-    const playersInCity = leaderboardPlayers.filter(p => p.city === myCity)
+    const nationalRank = leaderboardPlayers.filter(p => p.elo > myElo).length + 1
 
-    const nationalRank = playersInFrance.filter(p => p.elo > myElo).length + 1
-    const regionRank = playersInRegion.filter(p => p.elo > myElo).length + 1
-    const cityRank = playersInCity.filter(p => p.elo > myElo).length + 1
+    // Only compute city/region rank if the user actually has one set
+    const cityRank = myCity
+      ? leaderboardPlayers.filter(p => (p.city || '') === myCity && p.elo > myElo).length + 1
+      : 999
+    const regionRank = myRegion
+      ? leaderboardPlayers.filter(p => (p.region || '') === myRegion && p.elo > myElo).length + 1
+      : 999
 
     return { cityRank, regionRank, nationalRank }
   }, [leaderboardPlayers, userProfile])
@@ -279,8 +291,9 @@ export default function App() {
     if (!userProfile) return null
     const { cityRank, regionRank, nationalRank } = competitiveRanks
     
-    if (cityRank <= 5) {
-      return `Maître de ${userProfile.city || 'Bordeaux'}`
+    const userCity = (userProfile.city || '').trim()
+    if (cityRank <= 5 && userCity) {
+      return `Maître de ${userCity}`
     } else if (regionRank <= 50) {
       return 'Leader Régional'
     } else if (nationalRank <= 100) {
@@ -499,7 +512,7 @@ export default function App() {
           // Re-fetch profile to sync state
           await fetchProfile(session.user.id)
         } catch (err) {
-          console.error("Erreur lors de la synchronisation Elo Decay:", err.message)
+          console.warn("Erreur lors de la synchronisation Elo Decay:", err?.message || err)
         }
       } else if (currentDecayCycles < dbDecayApplied && dbDecayApplied > 0) {
         // If the user played a match, reset decay_applied_cycles in DB
@@ -516,7 +529,7 @@ export default function App() {
           // Re-fetch profile to sync state
           await fetchProfile(session.user.id)
         } catch (err) {
-          console.error("Erreur lors du reset des cycles Elo Decay:", err.message)
+          console.warn("Erreur lors du reset des cycles Elo Decay:", err?.message || err)
         }
       }
     }
@@ -718,23 +731,47 @@ export default function App() {
 
   const fetchProfile = async (userId) => {
     try {
-      const { data, error } = await supabase
+      // Phase 1: Query ALL known columns. Supabase ignores columns that don't exist
+      // when using SELECT, but PostgREST will 400 on unknown column names.
+      // So we try the full column set first, then fall back to core-only.
+      let data = null
+      let error = null
+
+      const fullSelect = 'id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag, is_elite, decay_applied_cycles'
+      const coreSelect = 'id, first_name, last_name, city, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count'
+
+      const fullResult = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag, is_elite, decay_applied_cycles')
+        .select(fullSelect)
         .eq('id', userId)
         .single()
 
-      if (error) throw error
+      if (fullResult.error) {
+        // If the full query fails (e.g., a column doesn't exist yet),
+        // fall back to querying only guaranteed core columns.
+        console.warn("fetchProfile: full query failed, falling back to core columns:", fullResult.error.message)
+        
+        const coreResult = await supabase
+          .from('profiles')
+          .select(coreSelect)
+          .eq('id', userId)
+          .single()
+
+        if (coreResult.error) throw coreResult.error
+        data = coreResult.data
+      } else {
+        data = fullResult.data
+      }
 
       if (data) {
         setUserProfile({
           id: data.id,
-          firstName: data.first_name,
-          lastName: data.last_name,
-          city: data.city || 'Bordeaux',
+          firstName: data.first_name || 'Joueur',
+          lastName: data.last_name || 'Padel',
+          city: data.city || '',
           country: data.country || 'France',
-          region: data.region || 'Nouvelle-Aquitaine',
-          club: data.club || 'Padel Arena',
+          region: data.region || '',
+          club: data.club || '',
           hand: data.hand || 'Droitier',
           playStyle: data.play_style || 'Stratège',
           avatar: data.avatar_url || null,
@@ -754,7 +791,7 @@ export default function App() {
         })
       }
     } catch (err) {
-      console.error("Erreur profil:", err.message)
+      console.error("Erreur profil:", err?.message || err)
       toast.error("Impossible de charger votre profil. Données par défaut utilisées.")
       setUserProfile({
         ...demoUser,
@@ -769,7 +806,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, club, region, elo_rating, is_elite')
+        .select('id, first_name, last_name, city, club, region, elo_rating, is_elite')
         .order('elo_rating', { ascending: false })
         .limit(50)
         
@@ -778,10 +815,11 @@ export default function App() {
       if (data) {
         const mapped = data.map(p => ({
           id: p.id,
-          firstName: p.first_name,
-          lastName: p.last_name,
-          club: p.club || 'Padel Arena',
-          region: p.region || 'Nouvelle-Aquitaine',
+          firstName: p.first_name || '',
+          lastName: p.last_name || '',
+          city: p.city || '',
+          club: p.club || '',
+          region: p.region || '',
           elo: p.elo_rating ?? 1000,
           rank: getRankFromElo(p.elo_rating ?? 1000),
           isElite: p.is_elite === true,
@@ -790,8 +828,7 @@ export default function App() {
         setLeaderboardPlayers(mapped)
       }
     } catch (err) {
-      console.error("Erreur classement:", err.message)
-      toast.error("Impossible de charger le classement. Veuillez réessayer.")
+      console.error("Erreur classement:", err?.message || err)
     }
   }
 
