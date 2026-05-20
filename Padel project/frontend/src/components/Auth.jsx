@@ -119,7 +119,21 @@ export default function Auth({ onDemoLogin }) {
         setIsLogin(true)
       }
     } catch (err) {
-      setError(err.message || "Une erreur est survenue lors de l'authentification.")
+      // Traduire les erreurs techniques en messages clairs utilisateur
+      const msg = err.message || ''
+      if (msg.includes('Database error querying schema') || msg.includes('unexpected_failure')) {
+        setError("Erreur de connexion au serveur. Veuillez réessayer dans quelques instants.")
+      } else if (msg.includes('Invalid login credentials')) {
+        setError("Email ou mot de passe incorrect.")
+      } else if (msg.includes('Email not confirmed')) {
+        setError("Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez votre boîte de réception.")
+      } else if (msg.includes('User already registered')) {
+        setError("Un compte avec cet email existe déjà. Connectez-vous ou utilisez \"Mot de passe oublié\".")
+      } else if (msg.includes('Password should be at least')) {
+        setError("Le mot de passe doit contenir au moins 6 caractères.")
+      } else {
+        setError(msg || "Une erreur est survenue lors de l'authentification.")
+      }
     } finally {
       setLoading(false)
     }

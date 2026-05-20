@@ -36,3 +36,4 @@ npm-debug.log*
 
 # Playwright MCP
 .playwright-mcp/
+.env*.local

@@ -871,52 +871,18 @@ export default function App() {
       if (import.meta.env.DEV) console.warn("RPC find_last_urgent_matches exception, fallback:", e.message)
     }
 
-    // 2. Fallback direct sur la table matches en supportant les deux schémas
+    // 2. Fallback direct sur la table matches (nouveau schéma uniquement)
     try {
-      let dbMatches = null
-      let dbError = null
-
-      try {
-        // Tentative 1 : Nouveau schéma
-        const { data, error } = await supabase
-          .from('matches')
-          .select('id, club_name, date_time, type, is_urgent, slots_available')
-          .eq('is_urgent', true)
-        
-        if (error) {
-          dbError = error
-        } else {
-          dbMatches = data
-        }
-      } catch (errNew) {
-        dbError = errNew
-      }
-
-      // Si erreur ou pas de données, tentative 2 : Ancien schéma
-      if (dbError || !dbMatches) {
-        console.warn("Échec requête nouveau schéma, tentative avec l'ancien schéma...")
-        try {
-          const { data, error } = await supabase
-            .from('matches')
-            .select('id, club, scheduled_at, match_type, is_last_urgent')
-            .eq('is_last_urgent', true)
-          
-          if (!error) {
-            dbMatches = data
-            dbError = null // Nettoyer l'erreur précédente car le fallback a réussi
-          } else {
-            dbError = error
-          }
-        } catch (errOld) {
-          dbError = errOld
-        }
-      }
+      const { data: dbMatches, error: dbError } = await supabase
+        .from('matches')
+        .select('id, club_name, date_time, type, is_urgent, slots_available')
+        .eq('is_urgent', true)
 
       if (dbError) throw dbError
 
       if (dbMatches && dbMatches.length > 0) {
         const mapped = dbMatches.map(m => {
-          const rawDate = m.date_time || m.scheduled_at
+          const rawDate = m.date_time
           const dateObj = rawDate ? new Date(rawDate) : new Date()
           const isToday = dateObj.toDateString() === new Date().toDateString()
           
