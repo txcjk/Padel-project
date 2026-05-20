@@ -3,6 +3,7 @@
 -- ============================================================
 
 -- 1. admin_get_all_users: Returns all profiles with email for admin panel
+DROP FUNCTION IF EXISTS admin_get_all_users();
 CREATE OR REPLACE FUNCTION admin_get_all_users()
 RETURNS TABLE (
   id UUID,

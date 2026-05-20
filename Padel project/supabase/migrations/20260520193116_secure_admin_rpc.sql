@@ -34,6 +34,7 @@ $$;
 GRANT EXECUTE ON FUNCTION check_is_admin() TO authenticated;
 
 -- 4. Secure admin_get_all_users with admin role check
+DROP FUNCTION IF EXISTS admin_get_all_users();
 CREATE OR REPLACE FUNCTION admin_get_all_users()
 RETURNS TABLE (
   id UUID,
@@ -72,6 +73,7 @@ $$;
 GRANT EXECUTE ON FUNCTION admin_get_all_users() TO authenticated;
 
 -- 5. Secure admin_toggle_elite with admin role check
+DROP FUNCTION IF EXISTS admin_toggle_elite(UUID, BOOLEAN);
 CREATE OR REPLACE FUNCTION admin_toggle_elite(
   p_user_id UUID,
   p_is_elite BOOLEAN
