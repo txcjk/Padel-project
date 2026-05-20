@@ -37,6 +37,7 @@ $$;
 GRANT EXECUTE ON FUNCTION admin_get_all_users() TO authenticated;
 
 -- 2. admin_toggle_elite: Toggles is_elite status for a user
+DROP FUNCTION IF EXISTS admin_toggle_elite(UUID, BOOLEAN);
 CREATE OR REPLACE FUNCTION admin_toggle_elite(
   p_user_id UUID,
   p_is_elite BOOLEAN
