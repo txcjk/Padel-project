@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase, isConfigured } from '../supabaseClient'
-import { Zap, Mail, Lock, User, MapPin, Building2, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import { Mail, Lock, User, MapPin, Building2, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import AuthAltSection from './AuthAltSection'
 import CGU from './CGU'
 
@@ -159,6 +159,7 @@ export default function Auth({ onDemoLogin }) {
               className="h-28 w-auto object-contain"
               loading="eager"
             />
+          </div>
 
           {/* Login/Register Tabs */}
           <div className="flex bg-zinc-950/60 p-1 rounded-xl border border-zinc-800/40">
