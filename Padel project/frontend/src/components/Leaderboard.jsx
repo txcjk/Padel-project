@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Trophy, MapPin, Swords, Medal, Crown, Sparkles } from 'lucide-react'
+import { Trophy, MapPin, Swords, Medal, Crown } from 'lucide-react'
 
 const getTierStyle = (tierColor) => {
   const styles = {
