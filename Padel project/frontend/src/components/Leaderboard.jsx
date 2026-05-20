@@ -139,7 +139,7 @@ export default function Leaderboard({ players, currentUser, onSelectPlayer, curr
                         {player.firstName} {player.lastName}
                       </p>
                       {player.isElite && (
-                        <Sparkles className="w-3 h-3 text-fuchsia-400 shrink-0" />
+                        <Crown className="w-3 h-3 text-violet-400 fill-violet-400/20 shrink-0 drop-shadow-[0_0_3px_rgba(168,85,247,0.45)] animate-pulse-slow" />
                       )}
                     </div>
                     {isCurrentUser && <span className="text-[9px] uppercase font-bold text-neon-violet tracking-widest">Vous</span>}
