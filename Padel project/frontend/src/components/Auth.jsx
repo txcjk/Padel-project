@@ -152,19 +152,13 @@ export default function Auth({ onDemoLogin }) {
 
         <div className="p-8 space-y-6">
           {/* Logo / Title */}
-          <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-[5.4rem] h-[5.4rem] rounded-xl bg-gradient-to-br from-neon-lime to-neon-lime-dim flex items-center justify-center glow-lime">
-              <Zap className="w-[2.625rem] h-[2.625rem] text-zinc-950" strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col">
-              <h1 className="font-display font-extrabold text-2xl tracking-tight text-zinc-100 lowercase">
-                elo<span className="text-neon-lime">match</span>
-              </h1>
-              <span className="text-[10px] tracking-[0.25em] text-zinc-500 uppercase font-medium mt-0.5">
-                Competitive Hub
-              </span>
-            </div>
-          </div>
+          <div className="flex flex-col items-center text-center">
+            <img 
+              src="/logo.png" 
+              alt="elomatch - Competitive Padel Hub" 
+              className="h-28 w-auto object-contain"
+              loading="eager"
+            />
 
           {/* Login/Register Tabs */}
           <div className="flex bg-zinc-950/60 p-1 rounded-xl border border-zinc-800/40">
