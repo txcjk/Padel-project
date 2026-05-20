@@ -102,19 +102,23 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neon-lime to-neon-lime-dim flex items-center justify-center glow-lime">
-              <Zap className="w-5 h-5 text-zinc-950" strokeWidth={2.5} />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-display font-extrabold text-lg leading-tight tracking-tight text-zinc-100 lowercase">
-                elo<span className="text-neon-lime">match</span>
-              </span>
-              <span className="text-[10px] tracking-[0.2em] text-zinc-500 uppercase font-medium -mt-0.5">
-                Competitive Hub
-              </span>
-            </div>
-          </div>
+          <a 
+            href="/"
+            onClick={(e) => {
+              e.preventDefault()
+              if (onNavigateTab) {
+                onNavigateTab('dashboard')
+              }
+            }}
+            className="hover:scale-105 active:scale-95 transition-all duration-200 ease-in-out block shrink-0 drop-shadow-[0_0_8px_rgba(163,230,53,0.15)] hover:drop-shadow-[0_0_15px_rgba(163,230,53,0.3)] cursor-pointer"
+          >
+            <img 
+              src="/logo.png" 
+              alt="elomatch - Competitive Padel Hub" 
+              className="h-10 w-auto md:h-11 object-contain"
+              loading="eager"
+            />
+          </a>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-5">
