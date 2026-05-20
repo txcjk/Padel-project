@@ -31,15 +31,12 @@ export default function RankedLimitModal({ onClose, onUpgrade }) {
 
         {/* Title */}
         <h2 className="text-center font-display font-extrabold text-2xl text-white uppercase tracking-tight mb-3">
-          Limite Atteinte
+          Limite mensuelle atteinte !
         </h2>
 
         {/* Message */}
-        <p className="text-center text-zinc-400 text-sm leading-relaxed mb-2">
-          Les membres <span className="text-zinc-200 font-semibold">Standard</span> sont limités à <span className="text-neon-lime font-bold">1 match Ranked par mois</span>.
-        </p>
-        <p className="text-center text-zinc-500 text-xs leading-relaxed mb-8">
-          Passez <span className="text-neon-violet font-bold">Élite</span> pour jouer en illimité et accéder aux statistiques de pro, alertes prioritaires et bien plus.
+        <p className="text-center text-zinc-400 text-sm leading-relaxed mb-8">
+          Les membres <span className="text-zinc-200 font-semibold">Standard</span> sont limités à <span className="text-neon-lime font-bold">1 match Ranked par mois</span>. Passez <span className="text-neon-violet font-bold">Élite</span> pour jouer en illimité dès aujourd'hui.
         </p>
 
         {/* CTA */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabaseClient'
 import { useToast } from './components/ToastProvider.jsx'
 import Auth from './components/Auth'
@@ -203,6 +203,128 @@ export default function App() {
   // Elite status — connected to Supabase is_elite column
   const isElite = userProfile?.isElite === true
 
+  // 1. Elo Decay calculation
+  const eloDecayStatus = useMemo(() => {
+    if (!userProfile) return { inactiveDays: 0, approachDeadline: false, daysRemaining: 0, mustDecay: false, decayCycles: 0, penaltyElo: 0 }
+    
+    const limit = isElite ? 60 : 45
+    const warningThreshold = isElite ? 45 : 35
+    
+    // Filter to only Completed/Pending/Full/Pending_Validation Ranked matches
+    const rankedMatches = recentMatches.filter(m => 
+      m.type === 'Ranked' && 
+      (m.status === 'Completed' || m.status === 'Pending' || m.status === 'Full' || m.status === 'Pending_Validation')
+    )
+    
+    if (rankedMatches.length === 0) {
+      return { inactiveDays: 0, approachDeadline: false, daysRemaining: limit, mustDecay: false, decayCycles: 0, penaltyElo: 0 }
+    }
+    
+    // Find the most recent Ranked match
+    const mostRecentMatch = rankedMatches.reduce((latest, current) => {
+      const latestDate = new Date(latest.rawDate || latest.date)
+      const currentDate = new Date(current.rawDate || current.date)
+      return currentDate > latestDate ? current : latest
+    }, rankedMatches[0])
+    
+    const lastMatchDate = new Date(mostRecentMatch.rawDate || mostRecentMatch.date)
+    const diffTime = Math.abs(new Date() - lastMatchDate)
+    const inactiveDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    
+    const decayCycles = Math.floor(inactiveDays / limit)
+    const penaltyElo = decayCycles * 15
+    const mustDecay = decayCycles > 0
+    
+    const approachDeadline = inactiveDays >= warningThreshold && inactiveDays < limit
+    const daysRemaining = Math.max(0, limit - inactiveDays)
+    
+    return {
+      inactiveDays,
+      approachDeadline,
+      daysRemaining,
+      mustDecay,
+      decayCycles,
+      penaltyElo
+    }
+  }, [recentMatches, userProfile, isElite])
+
+  const effectiveElo = useMemo(() => {
+    if (!userProfile) return 1000
+    return Math.max(0, userProfile.elo - eloDecayStatus.penaltyElo)
+  }, [userProfile, eloDecayStatus.penaltyElo])
+
+  const effectiveRank = useMemo(() => {
+    return getRankFromElo(effectiveElo)
+  }, [effectiveElo])
+
+  const effectiveLeaderboardPlayers = useMemo(() => {
+    return leaderboardPlayers.map(p => {
+      if (p.id === userProfile?.id) {
+        return {
+          ...p,
+          elo: effectiveElo,
+          rank: effectiveRank,
+          isElite: isElite
+        }
+      }
+      return p
+    })
+  }, [leaderboardPlayers, userProfile?.id, effectiveElo, effectiveRank, isElite])
+
+  // 2. Lazy Elo Decay Database Sync
+  useEffect(() => {
+    if (!session || !userProfile || isDemo) return
+
+    const syncEloDecay = async () => {
+      const dbDecayApplied = userProfile.decayAppliedCycles ?? 0
+      const currentDecayCycles = eloDecayStatus.decayCycles
+      
+      if (currentDecayCycles > dbDecayApplied) {
+        const diffCycles = currentDecayCycles - dbDecayApplied
+        const penalty = diffCycles * 15
+        const newElo = Math.max(0, userProfile.elo - penalty)
+        
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              elo_rating: newElo,
+              decay_applied_cycles: currentDecayCycles
+            })
+            .eq('id', session.user.id)
+            
+          if (error) throw error
+          
+          toast.info(`📉 Pénalité d'inactivité appliquée : -${penalty} Elo. Jouez un match Classé pour stopper la dégradation !`)
+          
+          // Re-fetch profile to sync state
+          await fetchProfile(session.user.id)
+        } catch (err) {
+          console.error("Erreur lors de la synchronisation Elo Decay:", err.message)
+        }
+      } else if (currentDecayCycles < dbDecayApplied && dbDecayApplied > 0) {
+        // If the user played a match, reset decay_applied_cycles in DB
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              decay_applied_cycles: 0
+            })
+            .eq('id', session.user.id)
+            
+          if (error) throw error
+          
+          // Re-fetch profile to sync state
+          await fetchProfile(session.user.id)
+        } catch (err) {
+          console.error("Erreur lors du reset des cycles Elo Decay:", err.message)
+        }
+      }
+    }
+    
+    syncEloDecay()
+  }, [eloDecayStatus.decayCycles, userProfile?.decayAppliedCycles, session, isDemo])
+
   // Listen to Auth changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -399,7 +521,7 @@ export default function App() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag, is_elite')
+        .select('id, first_name, last_name, city, country, region, club, hand, play_style, avatar_url, elo_rating, fair_play_score, punctuality_rate, matches_saved_count, player_tag, is_elite, decay_applied_cycles')
         .eq('id', userId)
         .single()
 
@@ -424,6 +546,7 @@ export default function App() {
           fairPlay: data.fair_play_score ?? 100,
           punctuality: data.punctuality_rate ?? 100,
           matchesSaved: data.matches_saved_count ?? 0,
+          decayAppliedCycles: data.decay_applied_cycles ?? 0,
           badges: [
             { label: 'Pompier du Padel Lvl 2', color: 'violet' },
             { label: 'Joueur Flash', color: 'lime' },
@@ -1015,9 +1138,29 @@ export default function App() {
 
   const handleDemoLogin = () => {
     setIsDemo(true)
-    setUserProfile(demoUser)
+    
+    // Dynamically adjust demo-r1 date to be 38 days ago (Standard) or 48 days ago (Elite) to trigger decay warning
+    const warningDaysAgo = demoUser.isElite ? 48 : 38
+    const warningDate = new Date()
+    warningDate.setDate(warningDate.getDate() - warningDaysAgo)
+    
+    const adjustedRecentMatches = demoRecentMatches.map(m => {
+      if (m.id === 'demo-r1') {
+        return {
+          ...m,
+          date: warningDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }),
+          rawDate: warningDate.toISOString()
+        }
+      }
+      return m
+    })
+
+    setUserProfile({
+      ...demoUser,
+      decayAppliedCycles: 0
+    })
     setUrgentMatches(demoUrgentMatches)
-    setRecentMatches(demoRecentMatches)
+    setRecentMatches(adjustedRecentMatches)
     setLeaderboardPlayers(demoLeaderboard)
     setPendingInvitations([
       {
@@ -1090,7 +1233,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans">
       <DashboardHeader 
-        user={userProfile} 
+        user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank }} 
         onLogout={handleLogout} 
         onUpgradeClick={() => setShowPremium(true)} 
         onProfileClick={() => setShowEditProfile(true)} 
@@ -1198,13 +1341,44 @@ export default function App() {
         {/* Tab views */}
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in space-y-8">
+            {/* Elo Decay Dynamic Alerts */}
+            {eloDecayStatus.approachDeadline && (
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-250 text-xs font-semibold flex items-center gap-3 animate-pulse shadow-[0_0_15px_rgba(245,158,11,0.1)] mt-6">
+                <span className="text-lg">⚠️</span>
+                <p className="flex-1 leading-relaxed text-zinc-300">
+                  <span className="font-extrabold text-amber-400">Inactivité :</span> Sans match <span className="underline">Ranked</span> sous <span className="font-extrabold text-amber-300">{eloDecayStatus.daysRemaining} jours</span>, vous perdrez <span className="font-extrabold text-red-400">15 points Elo</span>.
+                </p>
+                <button
+                  onClick={() => setActiveTab('create-match')}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-zinc-950 font-black uppercase text-[10px] tracking-wider transition-colors cursor-pointer"
+                >
+                  Jouer
+                </button>
+              </div>
+            )}
+
+            {eloDecayStatus.mustDecay && (
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-250 text-xs font-semibold flex items-center gap-3 shadow-[0_0_20px_rgba(239,68,68,0.1)] mt-6">
+                <span className="text-lg animate-bounce">📉</span>
+                <p className="flex-1 leading-relaxed text-zinc-300">
+                  <span className="font-extrabold text-red-400">Pénalité d'inactivité :</span> -{eloDecayStatus.penaltyElo} points Elo par cycle d'inactivité accumulé. Jouez un match Classé pour stopper la dégradation !
+                </p>
+                <button
+                  onClick={() => setActiveTab('create-match')}
+                  className="px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-650 text-white font-black uppercase text-[10px] tracking-wider transition-colors cursor-pointer"
+                >
+                  Jouer
+                </button>
+              </div>
+            )}
+
             <section className="mt-6">
               <LastAlert matches={urgentMatches} savedCount={userProfile.matchesSaved} onSaveMatch={handleSaveMatch} />
             </section>
 
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-4">
-                <PlayerCard user={{ ...userProfile, isElite, globalRank: leaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
+                <PlayerCard user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank, isElite, globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11 }} />
               </div>
 
               <div className="lg:col-span-8">
@@ -1218,12 +1392,12 @@ export default function App() {
             </div>
             
             <section>
-              <Leaderboard players={leaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} currentUserIsElite={isElite} />
+              <Leaderboard players={effectiveLeaderboardPlayers} currentUser={userProfile} onSelectPlayer={setSelectedPlayer} currentUserIsElite={isElite} />
             </section>
 
             <section>
               <ProStats 
-                user={userProfile} 
+                user={{ ...userProfile, elo: effectiveElo }} 
                 matches={recentMatches} 
                 isElite={isElite} 
                 onUpgrade={() => setShowPremium(true)} 
@@ -1241,6 +1415,8 @@ export default function App() {
               onAddMatch={handleAddMatch}
               prefilledData={prefilledMatchData}
               onNavigateToDashboard={handleNavigateToDashboard}
+              recentMatches={recentMatches}
+              onRankedLimitReached={() => setShowRankedLimit(true)}
             />
           </div>
         )}

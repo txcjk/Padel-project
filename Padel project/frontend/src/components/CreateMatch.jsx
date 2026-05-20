@@ -9,7 +9,9 @@ export default function CreateMatch({
   isDemo, 
   onAddMatch, 
   prefilledData = null, 
-  onNavigateToDashboard 
+  onNavigateToDashboard,
+  recentMatches = [],
+  onRankedLimitReached
 }) {
   const toast = useToast()
   
@@ -127,6 +129,27 @@ export default function CreateMatch({
     const scheduledAt = new Date(`${date}T${time}`).toISOString()
 
     try {
+      // --- Ranked match limit check for non-Elite users ---
+      if (matchType === 'Ranked' && !isElite) {
+        const now = new Date()
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+        const rankedThisMonth = (recentMatches || []).filter(m => {
+          if (m.type !== 'Ranked') return false
+          const matchDate = new Date(m.rawDate || m.date)
+          return matchDate >= startOfMonth && (m.status === 'Completed' || m.status === 'Full' || m.status === 'Pending' || m.status === 'Pending_Validation')
+        }).length
+
+        if (rankedThisMonth >= 1) {
+          if (onRankedLimitReached) {
+            onRankedLimitReached()
+          } else {
+            toast.error('Limite mensuelle atteinte ! Les membres Standard sont limités à 1 match Ranked par mois. Passez Élite pour jouer en illimité dès aujourd\'hui.')
+          }
+          setLoading(false)
+          return
+        }
+      }
+
       if (isDemo) {
         // --- Demo Mode Logic ---
         const simulatedMatch = {
@@ -166,29 +189,6 @@ export default function CreateMatch({
         toast.success('Match créé avec succès (Mode Démo) !')
       } else {
         // --- Live Supabase Logic ---
-        
-        // 1. Double check Ranked match limit for non-Elite users
-        if (matchType === 'Ranked' && !isElite) {
-          const now = new Date()
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-          
-          // Fetch creator's matches this month
-          const { data: myMatches, error: myMatchesErr } = await supabase
-            .from('matches')
-            .select('id, match_type, scheduled_at')
-            .eq('creator_id', user.id)
-            .eq('match_type', 'Ranked')
-            .gte('scheduled_at', startOfMonth)
-            
-          if (myMatchesErr) throw myMatchesErr
-
-          if (myMatches && myMatches.length >= 1) {
-            toast.error('Limite mensuelle atteinte. Les comptes standards sont limités à 1 match Classé créé par mois. Passez à Élite pour un accès illimité !')
-            setLoading(false)
-            return
-          }
-        }
-
         // Determine correct initial match status
         const isMatchFull = slot2 && slot3 && slot4
         const initialStatus = isMatchFull ? 'Full' : 'Pending'
