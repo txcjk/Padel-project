@@ -96,8 +96,8 @@ export default function PlayerCard({ user }) {
           {/* Achievement Badges — top-left corner, minimal icons */}
           <div className="absolute top-[16%] left-[15%] z-20 flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full border border-white/10 shadow-inner">
             {isElite && (
-              <div className="w-4.5 h-4.5 rounded-full bg-zinc-700/40 border border-zinc-400/50 flex items-center justify-center shadow-inner" title="Elite">
-                <Crown className="w-2.5 h-2.5 text-zinc-300" />
+              <div className="w-4.5 h-4.5 rounded-full bg-transparent border border-neon-violet/30 flex items-center justify-center" title="Elite">
+                <Crown className="w-2.5 h-2.5 text-neon-violet fill-neon-violet/20 drop-shadow-[0_0_4px_rgba(168,85,247,0.6)]" />
               </div>
             )}
             {user.hasExplorerBadge && (
