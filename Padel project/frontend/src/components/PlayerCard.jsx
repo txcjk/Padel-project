@@ -94,23 +94,27 @@ export default function PlayerCard({ user }) {
           )}
 
           {/* Achievement Badges — top-left corner, minimal icons */}
-          <div className="absolute top-[16%] left-[15%] z-20 flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full border border-white/10 shadow-inner">
-            {isElite && (
-              <div className="w-4.5 h-4.5 rounded-full bg-transparent border border-neon-violet/30 flex items-center justify-center" title="Elite">
-                <Crown className="w-2.5 h-2.5 text-neon-violet fill-neon-violet/20 drop-shadow-[0_0_4px_rgba(168,85,247,0.6)]" />
-              </div>
-            )}
-            {user.hasExplorerBadge && (
-              <div className="w-4.5 h-4.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-inner" title="Explorer">
-                <MapPin className="w-2.5 h-2.5 text-emerald-400" />
-              </div>
-            )}
-            {user.hasVeteranBadge && (
-              <div className="w-4.5 h-4.5 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shadow-inner" title="Veteran">
-                <Shield className="w-2.5 h-2.5 text-amber-400" />
-              </div>
-            )}
-          </div>
+          {(user.hasExplorerBadge || user.hasVeteranBadge) && (
+            <div className="absolute top-[16%] left-[15%] z-20 flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full border border-white/10 shadow-inner">
+              {user.hasExplorerBadge && (
+                <div className="w-4.5 h-4.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-inner" title="Explorer">
+                  <MapPin className="w-2.5 h-2.5 text-emerald-400" />
+                </div>
+              )}
+              {user.hasVeteranBadge && (
+                <div className="w-4.5 h-4.5 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shadow-inner" title="Veteran">
+                  <Shield className="w-2.5 h-2.5 text-amber-400" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Elite Crown — top-right corner, fully borderless & transparent */}
+          {isElite && (
+            <div className="absolute top-[16%] right-[15%] z-20" title="Elite">
+              <Crown className="w-4.5 h-4.5 text-neon-violet fill-neon-violet/10 drop-shadow-[0_0_8px_rgba(168,85,247,0.7)]" />
+            </div>
+          )}
 
           {/* 1. TOP HEADER: Centered Elo Rating */}
           <div className="flex flex-col items-center pt-3 z-10">
