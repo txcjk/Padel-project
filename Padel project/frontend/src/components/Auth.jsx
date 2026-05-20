@@ -153,8 +153,8 @@ export default function Auth({ onDemoLogin }) {
         <div className="p-8 space-y-6">
           {/* Logo / Title */}
           <div className="flex flex-col items-center text-center space-y-2">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-neon-lime to-neon-lime-dim flex items-center justify-center glow-lime">
-              <Zap className="w-6 h-6 text-zinc-950" strokeWidth={2.5} />
+            <div className="w-[3.6rem] h-[3.6rem] rounded-xl bg-gradient-to-br from-neon-lime to-neon-lime-dim flex items-center justify-center glow-lime">
+              <Zap className="w-7 h-7 text-zinc-950" strokeWidth={2.5} />
             </div>
             <div className="flex flex-col">
               <h1 className="font-display font-extrabold text-2xl tracking-tight text-zinc-100 lowercase">

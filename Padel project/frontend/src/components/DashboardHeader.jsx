@@ -115,7 +115,7 @@ export default function DashboardHeader({ user, onLogout, onUpgradeClick, onProf
             <img 
               src="/logo.png" 
               alt="elomatch - Competitive Padel Hub" 
-              className="h-10 w-auto md:h-11 object-contain"
+              className="h-12 w-auto md:h-[3.3rem] object-contain"
               loading="eager"
             />
           </a>
