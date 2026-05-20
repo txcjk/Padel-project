@@ -203,8 +203,8 @@ export default function App() {
   const [hasConsultedRegion, setHasConsultedRegion] = useState(false)
   const [dbRanks, setDbRanks] = useState(null)
 
-  // Admin access check
-  const isAdmin = session?.user?.email === 'ludow3b@gmail.com'
+  // Admin access check — verified server-side via RPC
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Elite status — connected to Supabase is_elite column
   const isElite = userProfile?.isElite === true
@@ -468,6 +468,16 @@ export default function App() {
     })
   }, [leaderboardPlayers, userProfile?.id, effectiveElo, effectiveRank, isElite])
 
+  const playerCardUser = useMemo(() => ({
+    ...userProfile,
+    elo: effectiveElo,
+    rank: effectiveRank,
+    isElite,
+    globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11,
+    hasExplorerBadge: badgeStats.clubsCount >= 3,
+    hasVeteranBadge: recentMatches.filter(m => m.status === 'Completed' || m.status === 'Full').length >= 10
+  }), [userProfile, effectiveElo, effectiveRank, isElite, effectiveLeaderboardPlayers, badgeStats, recentMatches])
+
   // 2. Lazy Elo Decay Database Sync
   useEffect(() => {
     if (!session || !userProfile || isDemo) return
@@ -576,8 +586,21 @@ export default function App() {
     if (session && session.user) {
       loadSupabaseData(session.user.id)
       registerUserDevice(session.user.id)
+      checkAdminStatus()
+    } else {
+      setIsAdmin(false)
     }
   }, [session])
+
+  const checkAdminStatus = async () => {
+    try {
+      const { data, error } = await supabase.rpc('check_is_admin')
+      if (error) throw error
+      setIsAdmin(data === true)
+    } catch {
+      setIsAdmin(false)
+    }
+  }
 
   const loadSupabaseData = async (userId) => {
     setLoading(true)
@@ -1601,7 +1624,7 @@ export default function App() {
 
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="lg:col-span-4 space-y-6">
-                <PlayerCard user={{ ...userProfile, elo: effectiveElo, rank: effectiveRank, isElite, globalRank: effectiveLeaderboardPlayers.findIndex(p => p.id === userProfile?.id) + 1 || 11, hasExplorerBadge: badgeStats.clubsCount >= 3, hasVeteranBadge: recentMatches.filter(m => m.status === 'Completed' || m.status === 'Full').length >= 10 }} />
+                <PlayerCard user={playerCardUser} />
                 <DefisNationaux challenges={challenges} />
                 <BadgesGrid stats={badgeStats} isElite={isElite} />
               </div>

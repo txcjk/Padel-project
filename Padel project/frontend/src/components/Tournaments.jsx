@@ -65,6 +65,7 @@ export default function Tournaments({
 
   useEffect(() => {
     loadTournamentData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemo])
 
   const loadTournamentData = async () => {

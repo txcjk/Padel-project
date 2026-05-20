@@ -61,6 +61,7 @@ export default function Bookings({
   // 1. Initial Load of the French Padel Club Library
   useEffect(() => {
     loadClubs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isDemo])
 
   // 2. Fetch bookings when selected club or date changes
@@ -68,6 +69,7 @@ export default function Bookings({
     if (selectedClub) {
       fetchBookings()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClub, selectedDate])
 
   const loadClubs = async () => {

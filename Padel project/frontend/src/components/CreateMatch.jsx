@@ -58,6 +58,7 @@ export default function CreateMatch({
     }, 300)
 
     return () => clearTimeout(delayDebounceFn)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery])
 
   const performSearch = async (query) => {

@@ -17,7 +17,7 @@ export default function ScoreApprovalBanner({ pendingMatches, onApprove, onDispu
             <div className="min-w-0">
               <span className="block text-xs font-bold text-neon-violet uppercase tracking-wider">Validation de Score Requise</span>
               <p className="text-sm font-medium text-zinc-200 mt-0.5 leading-tight">
-                Un score de <strong className="text-neon-lime">{match.score.team1}</strong> a été proposé pour votre match au <strong className="text-zinc-100">{match.club}</strong>.
+                Un score de <strong className="text-neon-lime">{match.score?.team1 ?? '—'}</strong> a été proposé pour votre match au <strong className="text-zinc-100">{match.club}</strong>.
               </p>
             </div>
           </div>

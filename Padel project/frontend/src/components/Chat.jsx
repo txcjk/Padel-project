@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageSquare, Send, Users, ShieldAlert, Sparkles, User, Bell, Loader2 } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 import { useToast } from './ToastProvider'
@@ -35,13 +35,13 @@ export default function Chat({
   ])
 
   // Scroll to bottom helper
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages, selectedChannel])
+  }, [messages, selectedChannel, scrollToBottom])
 
   // Handle outside direct recipient trigger
   useEffect(() => {
