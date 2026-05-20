@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase, isConfigured } from '../supabaseClient'
-import { Zap, Mail, Lock, User, MapPin, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
+import { Zap, Mail, Lock, User, MapPin, Building2, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import AuthAltSection from './AuthAltSection'
 import CGU from './CGU'
 
@@ -18,6 +18,16 @@ export default function Auth({ onDemoLogin }) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [city, setCity] = useState('')
+  const [club, setClub] = useState('')
+
+  const COMMON_CLUBS = [
+    '4PADEL Bordeaux',
+    '¡HOLA! PADEL',
+    'Big Padel Jet Sports',
+    'Padel Touch Arcachon',
+    'Padel Arena Rouen',
+    'Casa Padel Paris'
+  ]
 
   const handleGoogleLogin = async () => {
     setError(null)
@@ -55,19 +65,35 @@ export default function Auth({ onDemoLogin }) {
 
     try {
       if (isLogin) {
-        // Sign In
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (signInError) throw signInError
+        // Sign In with retry on transient errors (500 auth intermittent)
+        const maxRetries = 2
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          })
+          if (!signInError) break // success
+          if (attempt < maxRetries && signInError.status >= 500) {
+            // Transient server error — wait 1s then retry
+            await new Promise(r => setTimeout(r, 1000))
+            continue
+          }
+          throw signInError
+        }
       } else {
         // Sign Up
         if (!firstName || !lastName || !city) {
           throw new Error('Veuillez remplir tous les champs du profil.')
         }
 
-        const { error: signUpError } = await supabase.auth.signUp({
+        // Clear any lingering session before signup (prevents silent failure)
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        if (currentSession) {
+          await supabase.auth.signOut()
+          await new Promise(r => setTimeout(r, 300))
+        }
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -77,11 +103,19 @@ export default function Auth({ onDemoLogin }) {
               first_name: firstName,
               last_name: lastName,
               city: city,
+              club: club,
             },
           },
         })
         if (signUpError) throw signUpError
-        setSuccess("Inscription réussie ! Veuillez vérifier votre boîte mail pour confirmer votre compte (si activé dans Supabase) ou connectez-vous.")
+
+        // Verify user was actually created (detect silent failures)
+        const { data: { session: postSession } } = await supabase.auth.getSession()
+        if (!signUpData?.user && !postSession) {
+          throw new Error("L'inscription a échoué. Une session active empêche la création d'un nouveau compte. Rechargez la page ou utilisez un navigateur privé.")
+        }
+
+        setSuccess("Inscription réussie ! Vérifiez votre boîte mail pour confirmer votre compte, ou connectez-vous directement si la confirmation automatique est activée.")
         setIsLogin(true)
       }
     } catch (err) {
@@ -191,19 +225,37 @@ export default function Auth({ onDemoLogin }) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium">Ville</label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600" />
-                    <input
-                      type="text"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Bordeaux"
-                      className="w-full bg-zinc-950/60 border border-zinc-800/60 focus:border-neon-lime/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none transition-all"
-                      required
-                    />
+                    <label className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium">Ville</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600" />
+                      <input
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="Bordeaux"
+                        className="w-full bg-zinc-950/60 border border-zinc-800/60 focus:border-neon-lime/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none transition-all"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium">Club (optionnel)</label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3.5 top-3 w-4 h-4 text-zinc-600" />
+                      <input
+                        type="text"
+                        value={club}
+                        onChange={(e) => setClub(e.target.value)}
+                        placeholder="4PADEL Bordeaux"
+                        list="common-clubs"
+                        className="w-full bg-zinc-950/60 border border-zinc-800/60 focus:border-neon-lime/50 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-700 focus:outline-none transition-all"
+                      />
+                      <datalist id="common-clubs">
+                        {COMMON_CLUBS.map(c => <option key={c} value={c} />)}
+                      </datalist>
+                    </div>
+                  </div>
               </div>
             )}
 

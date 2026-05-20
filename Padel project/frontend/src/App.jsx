@@ -865,10 +865,10 @@ export default function App() {
         return
       }
       if (error) {
-        console.warn("L'appel RPC 'find_last_urgent_matches' a retourné une erreur:", error.message)
+        if (import.meta.env.DEV) console.warn("RPC find_last_urgent_matches erreur, fallback sur requête directe:", error.message)
       }
     } catch (e) {
-      console.warn("L'appel RPC 'find_last_urgent_matches' a échoué:", e.message)
+      if (import.meta.env.DEV) console.warn("RPC find_last_urgent_matches exception, fallback:", e.message)
     }
 
     // 2. Fallback direct sur la table matches en supportant les deux schémas
