@@ -93,20 +93,20 @@ export default function PlayerCard({ user }) {
             </div>
           )}
 
-          {/* Achievement Badges — top-left corner, minimal object icons */}
-          <div className="absolute top-[18%] left-[15%] z-20 flex items-center gap-1">
+          {/* Achievement Badges — top-left corner, minimal icons */}
+          <div className="absolute top-[16%] left-[15%] z-20 flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full border border-white/10 shadow-inner">
             {isElite && (
-              <div className="w-5 h-5 rounded-full bg-zinc-500/20 border border-zinc-400/30 flex items-center justify-center">
+              <div className="w-4.5 h-4.5 rounded-full bg-zinc-700/40 border border-zinc-400/50 flex items-center justify-center shadow-inner" title="Elite">
                 <Crown className="w-2.5 h-2.5 text-zinc-300" />
               </div>
             )}
             {user.hasExplorerBadge && (
-              <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center">
+              <div className="w-4.5 h-4.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shadow-inner" title="Explorer">
                 <MapPin className="w-2.5 h-2.5 text-emerald-400" />
               </div>
             )}
             {user.hasVeteranBadge && (
-              <div className="w-5 h-5 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center">
+              <div className="w-4.5 h-4.5 rounded-full bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shadow-inner" title="Veteran">
                 <Shield className="w-2.5 h-2.5 text-amber-400" />
               </div>
             )}
@@ -225,15 +225,16 @@ export default function PlayerCard({ user }) {
               )}
             </div>
 
-            {/* Player ID — discreet serial number at card bottom */}
-            {user.playerTag && (
-              <div className="text-center mt-1">
-                <span className="text-[9px] font-mono text-zinc-600 tracking-wider">
-                  {user.playerTag}
-                </span>
-              </div>
-            )}
           </div>
+
+          {/* Player ID — absolute bottom center of the card */}
+          {user.playerTag && (
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-25 text-center">
+              <span className="text-[9px] font-mono text-zinc-600 tracking-wider uppercase">
+                {user.playerTag}
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
