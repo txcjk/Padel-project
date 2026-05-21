@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Calendar, MapPin, Trophy, Shield, HelpCircle, Loader2, Sparkles, CheckCircle2, UserPlus, X, Search } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Calendar, MapPin, Trophy, Shield, HelpCircle, Loader2, Sparkles, CheckCircle2, UserPlus, X, Search, HeartHandshake } from 'lucide-react'
 import { supabase } from '../supabaseClient'
 import { useToast } from './ToastProvider'
 
@@ -34,6 +34,38 @@ export default function CreateMatch({
   const [isLastUrgent, setIsLastUrgent] = useState(false)
   const [loading, setLoading] = useState(false)
   const [createdSuccess, setCreatedSuccess] = useState(false)
+
+  // Fair-play pop-up toast states & refs
+  const [showFairPlayToast, setShowFairPlayToast] = useState(false)
+  const [toastFadeOut, setToastFadeOut] = useState(false)
+  const toastTimeoutRef = useRef(null)
+  const fadeTimeoutRef = useRef(null)
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current)
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current)
+    }
+  }, [])
+
+  // Helper function to trigger the fair-play toast and redirect
+  const triggerFairPlayToastAndRedirect = (onRedirect) => {
+    setShowFairPlayToast(true)
+    setToastFadeOut(false)
+
+    // Keep toast visible for exactly 5 seconds (5000ms)
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastFadeOut(true)
+
+      // Allow 500ms for smooth CSS fade out animation
+      fadeTimeoutRef.current = setTimeout(() => {
+        setShowFairPlayToast(false)
+        onRedirect()
+      }, 500)
+    }, 5000)
+  }
+
 
   // 4-Slot Composer States
   const [slot2, setSlot2] = useState(null) // Team A, partner
@@ -186,8 +218,11 @@ export default function CreateMatch({
           onAddMatch(simulatedMatch)
         }
         
-        setCreatedSuccess(true)
-        toast.success('Match créé avec succès (Mode Démo) !')
+        triggerFairPlayToastAndRedirect(() => {
+          setCreatedSuccess(true)
+          setLoading(false)
+          toast.success('Match créé avec succès (Mode Démo) !')
+        })
       } else {
         // --- Live Supabase Logic ---
         // Determine correct initial match status
@@ -259,17 +294,19 @@ export default function CreateMatch({
 
         if (partErr) throw partErr
 
-        setCreatedSuccess(true)
-        toast.success('Votre match et ses invitations ont été publiés avec succès !')
-        
         if (onAddMatch) {
           onAddMatch(matchData)
         }
+
+        triggerFairPlayToastAndRedirect(() => {
+          setCreatedSuccess(true)
+          setLoading(false)
+          toast.success('Votre match et ses invitations ont été publiés avec succès !')
+        })
       }
     } catch (err) {
       console.error(err)
       toast.error(err.message || 'Une erreur est survenue lors de la création.')
-    } finally {
       setLoading(false)
     }
   }
@@ -787,6 +824,36 @@ export default function CreateMatch({
                 </button>
               ))
             )}
+          </div>
+        </div>
+      )}
+      {/* FAIR-PLAY MANDATORY POP-UP TOAST */}
+      {showFairPlayToast && (
+        <div 
+          className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-6 py-4.5 rounded-2xl bg-zinc-900 border border-violet-500 text-white shadow-[0_0_40px_rgba(139,92,246,0.35)] transition-all duration-500 ease-in-out w-[calc(100%-2rem)] max-w-md ${
+            toastFadeOut ? 'opacity-0 translate-y-4 scale-95 pointer-events-none' : 'opacity-100 translate-y-0 scale-100'
+          }`}
+          role="alert"
+        >
+          <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-center justify-center text-violet-400 shrink-0 shadow-[0_0_15px_rgba(139,92,246,0.15)] animate-pulse">
+            <HeartHandshake className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <span className="block text-xs font-bold text-violet-400 uppercase tracking-widest leading-none mb-1">
+              Esprit Sportif
+            </span>
+            <span className="block text-sm font-semibold tracking-wide text-zinc-100 leading-tight">
+              Ce n'est que du sport, soyez fair-play !
+            </span>
+          </div>
+          {/* Progress bar visual indicator of 5 seconds */}
+          <div className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-zinc-800/40 overflow-hidden">
+            <div
+              className="h-full bg-violet-500 rounded-full"
+              style={{
+                animation: 'toast-progress 5s linear forwards',
+              }}
+            />
           </div>
         </div>
       )}
