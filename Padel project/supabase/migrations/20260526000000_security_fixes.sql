@@ -11,7 +11,7 @@
 -- ============================================================
 
 -- 1. Enable RLS on storage.objects (CRITICAL — was disabled)
--- ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
 -- 2. CHECK constraints on profiles for server-side validation
 ALTER TABLE public.profiles

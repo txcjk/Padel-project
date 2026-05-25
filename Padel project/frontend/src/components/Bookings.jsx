@@ -19,6 +19,7 @@ export default function Bookings({
   // Determine if a club uses external booking (redirect) or in-app booking
   const isExternalClub = (club) => {
     if (!club) return false
+    if (club.official_website_url && club.official_website_url.trim() !== '') return true
     const ext = (club.software_provider || '').toLowerCase()
     return ext !== 'none' && ext !== ''
   }
@@ -57,6 +58,52 @@ export default function Bookings({
   const [syncingAvailability, setSyncingAvailability] = useState(false)
   const [bookingsList, setBookingsList] = useState([])
   const [successBooking, setSuccessBooking] = useState(null)
+
+  // Redirect Modal States
+  const [showRedirectModal, setShowRedirectModal] = useState(false)
+  const [redirectCountdown, setRedirectCountdown] = useState(3)
+  const [redirectUrl, setRedirectUrl] = useState('')
+  const [redirectClubName, setRedirectClubName] = useState('')
+
+  // Handle trigger redirect with 3-second countdown
+  const handleTriggerRedirect = (club) => {
+    if (!club) return
+    const targetUrl = club.official_website_url || club.website || 'https://www.google.com'
+    setRedirectUrl(targetUrl)
+    setRedirectClubName(club.name)
+    setRedirectCountdown(3)
+    setShowRedirectModal(true)
+  }
+
+  // Effect for the 3-second redirect countdown and safety cleanup
+  useEffect(() => {
+    let timer
+    let redirectTimer
+
+    if (showRedirectModal) {
+      // Countdown decrementer
+      timer = setInterval(() => {
+        setRedirectCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      // Precise 3-second redirect hook
+      redirectTimer = setTimeout(() => {
+        window.open(redirectUrl, '_blank', 'noopener,noreferrer')
+        setShowRedirectModal(false)
+      }, 3000)
+    }
+
+    return () => {
+      if (timer) clearInterval(timer)
+      if (redirectTimer) clearTimeout(redirectTimer)
+    }
+  }, [showRedirectModal, redirectUrl])
 
   // Demo bookings seed
   const [demoBookings, setDemoBookings] = useState([
@@ -130,10 +177,18 @@ export default function Bookings({
       });
     }
 
+    const enrichClubsList = (list) => {
+      return list.map(c => ({
+        ...c,
+        official_website_url: c.official_website_url || c.website || ''
+      }));
+    }
+
     if (isDemo) {
-      setClubsList(defaultClubs)
-      setSelectedClub(defaultClubs[0].name)
-      setSelectedClubObj(defaultClubs[0])
+      const enriched = enrichClubsList(defaultClubs)
+      setClubsList(enriched)
+      setSelectedClub(enriched[0].name)
+      setSelectedClubObj(enriched[0])
       return
     }
 
@@ -143,29 +198,33 @@ export default function Bookings({
       
       if (error) {
         console.warn('Graceful fallback: Table "clubs" missing or error, using default French libraries.', error.message)
-        setClubsList(defaultClubs)
-        setSelectedClub(defaultClubs[0].name)
-        setSelectedClubObj(defaultClubs[0])
+        const enriched = enrichClubsList(defaultClubs)
+        setClubsList(enriched)
+        setSelectedClub(enriched[0].name)
+        setSelectedClubObj(enriched[0])
         return
       }
       
       if (data && data.length > 0) {
-        const sorted = sortClubsFeatured(data)
+        const enriched = enrichClubsList(data)
+        const sorted = sortClubsFeatured(enriched)
         setClubsList(sorted)
         setSelectedClub(sorted[0].name)
         setSelectedClubObj(sorted[0])
       } else {
         // Table exists but empty — fallback to hardcoded library
         console.warn('Clubs table is empty, using default library.')
-        setClubsList(defaultClubs)
-        setSelectedClub(defaultClubs[0].name)
-        setSelectedClubObj(defaultClubs[0])
+        const enriched = enrichClubsList(defaultClubs)
+        setClubsList(enriched)
+        setSelectedClub(enriched[0].name)
+        setSelectedClubObj(enriched[0])
       }
     } catch (err) {
       console.warn('Graceful catch in loadClubs:', err)
-      setClubsList(defaultClubs)
-      setSelectedClub(defaultClubs[0].name)
-      setSelectedClubObj(defaultClubs[0])
+      const enriched = enrichClubsList(defaultClubs)
+      setClubsList(enriched)
+      setSelectedClub(enriched[0].name)
+      setSelectedClubObj(enriched[0])
     }
   }
 
@@ -441,19 +500,17 @@ export default function Bookings({
             </select>
           </div>
 
-          {selectedClubObj && isExternalClub(selectedClubObj) ? null : (
-            <div className="space-y-1.5">
-              <label htmlFor="date-select-booking" className="text-[10px] uppercase tracking-widest font-black text-zinc-500">Choisir la Date</label>
-              <input
-                id="date-select-booking"
-                type="date"
-                value={selectedDate}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={(e) => { setSelectedDate(e.target.value); setSuccessBooking(null); }}
-                className="w-full px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/60 text-zinc-200 text-sm font-semibold focus:outline-none focus:border-neon-lime"
-              />
-            </div>
-          )}
+          <div className="space-y-1.5">
+            <label htmlFor="date-select-booking" className="text-[10px] uppercase tracking-widest font-black text-zinc-500">Choisir la Date</label>
+            <input
+              id="date-select-booking"
+              type="date"
+              value={selectedDate}
+              min={new Date().toISOString().split('T')[0]}
+              onChange={(e) => { setSelectedDate(e.target.value); setSuccessBooking(null); }}
+              className="w-full px-3 py-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/60 text-zinc-200 text-sm font-semibold focus:outline-none focus:border-neon-lime"
+            />
+          </div>
 
           {/* Club Info card */}
           {selectedClubObj && (
@@ -468,15 +525,15 @@ export default function Bookings({
                     <span className="px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400">API ID: {selectedClubObj.external_api_id}</span>
                   )}
                 </div>
-                {isExternalClub(selectedClubObj) && selectedClubObj.website && (
+                {selectedClubObj.official_website_url && (
                   <a
-                    href={selectedClubObj.website}
+                    href={selectedClubObj.official_website_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors truncate"
+                    className="flex items-center gap-1 text-neon-lime hover:underline transition-all truncate"
                   >
                     <ExternalLink className="w-3 h-3 shrink-0" />
-                    <span className="truncate lowercase">{selectedClubObj.website.replace(/^https?:\/\//, '')}</span>
+                    <span className="truncate lowercase">{selectedClubObj.official_website_url.replace(/^https?:\/\//, '')}</span>
                   </a>
                 )}
               </div>
@@ -484,24 +541,7 @@ export default function Bookings({
           )}
 
           {/* Selection Detail & Action CTA */}
-          {selectedClubObj && isExternalClub(selectedClubObj) ? (
-            /* External club: show redirect button instead of slot selection */
-            <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 text-center space-y-3">
-              <ExternalLink className="w-5 h-5 text-amber-400 mx-auto" />
-              <p className="text-[10px] text-zinc-400 font-semibold leading-relaxed">
-                Ce club utilise <span className="text-zinc-200 font-bold">{selectedClubObj.software_provider}</span>.<br />
-                Réservation via leur site.
-              </p>
-              <a
-                href={selectedClubObj.website || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block w-full py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-black text-[10px] uppercase tracking-wider transition-all"
-              >
-                Réserver sur le site →
-              </a>
-            </div>
-          ) : selectedSlot ? (
+          {selectedSlot ? (
             <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800/80 space-y-4 animate-fade-in">
               <div className="space-y-1">
                 <span className="text-[9px] uppercase tracking-wider font-bold text-neon-lime">Votre Sélection</span>
@@ -526,13 +566,31 @@ export default function Bookings({
                 })()}
               </div>
 
-              <button
-                onClick={handleBookCourt}
-                disabled={loading}
-                className="w-full py-2.5 rounded-lg bg-neon-lime hover:bg-neon-lime/90 disabled:bg-zinc-800 text-zinc-950 font-black text-xs uppercase tracking-wider cursor-pointer glow-lime flex items-center justify-center gap-2 transition-all"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Confirmer la Réservation</span>}
-              </button>
+              {selectedClubObj && isExternalClub(selectedClubObj) ? (
+                <button
+                  onClick={() => handleTriggerRedirect(selectedClubObj)}
+                  className="w-full py-2.5 rounded-lg bg-neon-lime hover:bg-neon-lime/90 text-zinc-950 font-black text-xs uppercase tracking-wider cursor-pointer glow-lime flex items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Réserver sur le site officiel</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleBookCourt}
+                  disabled={loading}
+                  className="w-full py-2.5 rounded-lg bg-neon-lime hover:bg-neon-lime/90 disabled:bg-zinc-800 text-zinc-950 font-black text-xs uppercase tracking-wider cursor-pointer glow-lime flex items-center justify-center gap-2 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <span>Confirmer la Réservation</span>}
+                </button>
+              )}
+            </div>
+          ) : selectedClubObj && isExternalClub(selectedClubObj) ? (
+            <div className="p-4 rounded-xl bg-zinc-950/30 border border-dashed border-zinc-800/60 text-center py-6 space-y-2">
+              <AlertCircle className="w-6 h-6 text-amber-500/80 mx-auto mb-1 animate-pulse" />
+              <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider">Club Partenaire Externe</p>
+              <p className="text-[10px] text-zinc-500 font-semibold leading-relaxed">
+                Ce club requiert une réservation sur sa propre plateforme. Sélectionnez un créneau pour être redirigé de manière sécurisée.
+              </p>
             </div>
           ) : (
             <div className="p-4 rounded-xl bg-zinc-950/30 border border-dashed border-zinc-800/60 text-center py-6">
@@ -542,117 +600,145 @@ export default function Bookings({
           )}
         </div>
 
-        {/* Visual Timeline and Court grid — OR — External redirect card */}
+        {/* Visual Timeline and Court grid */}
         <div className="md:col-span-8 p-5 rounded-2xl bg-zinc-900/60 border border-zinc-800/60 space-y-5">
-          {selectedClubObj && isExternalClub(selectedClubObj) ? (
-            /* External club: redirect to official booking website */
-            <div className="flex flex-col items-center justify-center py-12 space-y-6">
-              <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <ExternalLink className="w-7 h-7 text-amber-400" />
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-display font-extrabold text-sm uppercase tracking-wider text-white">Grille des Terrains</h4>
+                
+                {/* Active Software API Sync Status Pill */}
+                {selectedClubObj && (
+                  <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all ${
+                    syncingAvailability 
+                      ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' 
+                      : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                  }`}>
+                    <Activity className={`w-3 h-3 ${syncingAvailability ? 'animate-bounce' : 'animate-pulse'}`} />
+                    <span>{syncingAvailability ? 'Synchro API...' : 'Réservation Directe'}</span>
+                  </div>
+                )}
               </div>
-              
-              <div className="text-center max-w-md">
-                <h4 className="font-display font-extrabold text-sm uppercase tracking-wider text-white mb-2">
-                  Réservation externe
-                </h4>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  {selectedClubObj.name} utilise <span className="text-zinc-200 font-bold">{selectedClubObj.software_provider}</span> pour ses réservations. 
-                  Tu seras redirigé vers leur plateforme de réservation officielle.
+              <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">Club : {selectedClub}</p>
+            </div>
+            
+            {/* Legend */}
+            <div className="flex gap-3 text-[9px] uppercase font-bold tracking-wider">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500/10 border border-emerald-500/20" />Libre</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-zinc-800" />Occupé (App)</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-neon-lime" />Sélectionné</span>
+            </div>
+          </div>
+
+          {/* Info Banner for External Partner Clubs */}
+          {selectedClubObj && isExternalClub(selectedClubObj) && (
+            <div className="p-3.5 rounded-xl bg-amber-500/5 border border-amber-500/15 flex items-start gap-2.5 text-amber-400 text-xs animate-fade-in shadow-[inset_0_0_20px_rgba(245,158,11,0.02)]">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div>
+                <p className="font-bold text-zinc-200 mb-0.5">Club Partenaire Externe</p>
+                <p className="leading-relaxed text-zinc-400 text-[11px]">
+                  Les créneaux ci-dessous sont synchronisés en temps réel via <span className="font-bold text-neon-lime">{selectedClubObj.software_provider || 'API Directe'}</span>. Choisissez l'heure souhaitée, puis complétez le paiement sécurisé sur leur site officiel de réservation.
                 </p>
               </div>
-
-              <a
-                href={selectedClubObj.website || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl bg-neon-lime text-zinc-950 font-black text-xs uppercase tracking-wider glow-lime transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(190,242,100,0.25)]"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>Réserver sur le site du club</span>
-              </a>
-
-              <p className="text-[9px] text-zinc-600 font-mono">
-                {selectedClubObj.website || 'Site non disponible'}
-              </p>
             </div>
-          ) : (
-            /* Internal club (none provider): full booking grid */
-            <>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-display font-extrabold text-sm uppercase tracking-wider text-white">Grille des Terrains</h4>
-                    
-                    {/* Active Software API Sync Status Pill */}
-                    {selectedClubObj && (
-                      <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-all ${
-                        syncingAvailability 
-                          ? 'bg-amber-500/10 border border-amber-500/20 text-amber-400' 
-                          : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-                      }`}>
-                        <Activity className={`w-3 h-3 ${syncingAvailability ? 'animate-bounce' : 'animate-pulse'}`} />
-                        <span>{syncingAvailability ? 'Synchro API...' : 'Réservation Directe'}</span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-zinc-500 font-semibold mt-0.5">Club : {selectedClub}</p>
-                </div>
-                
-                {/* Legend */}
-                <div className="flex gap-3 text-[9px] uppercase font-bold tracking-wider">
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500/10 border border-emerald-500/20" />Libre</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-zinc-800" />Occupé (App)</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-neon-lime" />Sélectionné</span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {COURTS.map(court => (
-                  <div key={court} className="space-y-1.5 p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60">
-                    <span className="text-[10px] uppercase font-black text-zinc-400 tracking-wide">{court}</span>
-                    
-                    <div className="grid grid-cols-5 gap-2">
-                      {TIME_SLOTS.map(time => {
-                        const matchSlot = bookingsList.find(b => {
-                          const bTime = new Date(b.booked_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-                          return b.court === court && bTime === time
-                        })
-
-                        const isTaken = !!matchSlot
-                        const isSelected = selectedSlot?.court === court && selectedSlot?.time === time
-
-                        let btnClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/30'
-                        if (isTaken) {
-                          btnClass = 'bg-zinc-900 border-zinc-850 text-zinc-600 cursor-not-allowed opacity-60'
-                        } else if (isSelected) {
-                          btnClass = 'bg-neon-lime border-neon-lime text-zinc-950 glow-lime font-black'
-                        }
-
-                        const pricing = getSlotPrice(time, selectedDate, selectedClub);
-                        return (
-                          <button
-                            key={time}
-                            onClick={() => handleSelectSlot(time, court)}
-                            disabled={isTaken}
-                            className={`py-2 rounded-lg border text-center font-mono text-[10px] font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${btnClass}`}
-                          >
-                            <span className="text-[10px]">{time}</span>
-                            {!isTaken && (
-                              <span className={`text-[8px] opacity-75 font-semibold ${isSelected ? 'text-zinc-950 font-black' : 'text-zinc-400'}`}>
-                                {pricing.price}€
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
           )}
+
+          <div className="space-y-4">
+            {COURTS.map(court => (
+              <div key={court} className="space-y-1.5 p-3 rounded-xl bg-zinc-950/40 border border-zinc-800/60">
+                <span className="text-[10px] uppercase font-black text-zinc-400 tracking-wide">{court}</span>
+                
+                <div className="grid grid-cols-5 gap-2">
+                  {TIME_SLOTS.map(time => {
+                    const matchSlot = bookingsList.find(b => {
+                      const bTime = new Date(b.booked_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+                      return b.court === court && bTime === time
+                    })
+
+                    const isTaken = !!matchSlot
+                    const isSelected = selectedSlot?.court === court && selectedSlot?.time === time
+
+                    let btnClass = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/30'
+                    if (isTaken) {
+                      btnClass = 'bg-zinc-900 border-zinc-850 text-zinc-600 cursor-not-allowed opacity-60'
+                    } else if (isSelected) {
+                      btnClass = 'bg-neon-lime border-neon-lime text-zinc-950 glow-lime font-black'
+                    }
+
+                    const pricing = getSlotPrice(time, selectedDate, selectedClub);
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => handleSelectSlot(time, court)}
+                        disabled={isTaken}
+                        className={`py-2 rounded-lg border text-center font-mono text-[10px] font-bold tracking-wide transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${btnClass}`}
+                      >
+                        <span className="text-[10px]">{time}</span>
+                        {!isTaken && (
+                          <span className={`text-[8px] opacity-75 font-semibold ${isSelected ? 'text-zinc-950 font-black' : 'text-zinc-400'}`}>
+                            {pricing.price}€
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Cinematic Redirect Modal */}
+      {showRedirectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/95 backdrop-blur-lg animate-fade-in animate-duration-300">
+          {/* Subtle Glows */}
+          <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-neon-lime/15 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-violet-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+          <div className="relative w-full max-w-md p-8 rounded-3xl bg-zinc-900/80 border border-zinc-800/80 shadow-[0_0_50px_rgba(0,0,0,0.8)] text-center space-y-6 overflow-hidden">
+            {/* Visual Header / Glowing Icon */}
+            <div className="relative w-20 h-20 mx-auto rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shadow-[0_0_20px_rgba(190,242,100,0.1)]">
+              <div className="absolute inset-0 rounded-2xl border border-neon-lime/20 animate-pulse" />
+              <ExternalLink className="w-8 h-8 text-neon-lime animate-bounce" />
+            </div>
+
+            {/* Content */}
+            <div className="space-y-3">
+              <h3 className="font-display font-black text-lg sm:text-xl text-white tracking-wide">
+                Redirection vers {redirectClubName}...
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-400 font-medium leading-relaxed px-2">
+                Pour votre certitude et votre sécurité, vous allez être redirigé vers la plateforme officielle du club pour finaliser votre paiement.
+              </p>
+            </div>
+
+            {/* Countdown and Loading Bar */}
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500 uppercase tracking-widest px-1">
+                <span>Sécurisation de la liaison</span>
+                <span className="text-neon-lime font-black text-sm">{redirectCountdown}s</span>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+                <div 
+                  className="h-full bg-gradient-to-r from-neon-lime to-violet-600 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${(redirectCountdown / 3) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Secondary safety close button */}
+            <button
+              onClick={() => setShowRedirectModal(false)}
+              className="px-4 py-2 rounded-xl bg-zinc-950/80 border border-zinc-850 hover:bg-zinc-900 text-zinc-500 hover:text-zinc-300 font-bold text-xs uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+            >
+              Annuler la redirection
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
