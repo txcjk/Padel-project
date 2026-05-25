@@ -64,7 +64,7 @@ const generateMockLeaderboard = () => {
   const players = [demoUser]
   const firstNames = ['Léo', 'Gabriel', 'Raphaël', 'Arthur', 'Louis', 'Emma', 'Jade', 'Louise', 'Alice', 'Lina', 'Hugo', 'Jules']
   const lastNames = ['Martin', 'Bernard', 'Thomas', 'Petit', 'Robert', 'Richard', 'Durand', 'Dubois', 'Moreau', 'Laurent']
-  const clubs = ['4Padels Bordeaux', 'Big Padel Jet Sports', 'Padel Touch Arcachon', 'Padel Arena Rouen', 'Casa Padel Paris']
+  const clubs = ['4PADEL Bordeaux', 'Big Padel', 'Padel Touch Bassin', '¡HOLA! PADEL', 'Padel Arena Rouen', 'Casa Padel Paris', '3D Padel', 'Buenavista Padel Club', 'Forever Padel', 'MB Padel', 'Padel House', 'UCPA Sport Station Bordeaux', 'Twins Padel Club']
   const regions = ['Nouvelle-Aquitaine', 'Île-de-France', 'Normandie']
 
   for (let i = 0; i < 20; i++) {
@@ -478,54 +478,26 @@ export default function App() {
     hasVeteranBadge: recentMatches.filter(m => m.status === 'Completed' || m.status === 'Full').length >= 10
   }), [userProfile, effectiveElo, effectiveRank, isElite, effectiveLeaderboardPlayers, badgeStats, recentMatches])
 
-  // 2. Lazy Elo Decay Database Sync
+  // 2. Server-side Elo Decay via RPC (no client-side ELO manipulation)
   useEffect(() => {
     if (!session || !userProfile || isDemo) return
+    if (!eloDecayStatus.mustDecay && !(eloDecayStatus.decayCycles < (userProfile.decayAppliedCycles ?? 0))) return
 
     const syncEloDecay = async () => {
-      const dbDecayApplied = userProfile.decayAppliedCycles ?? 0
-      const currentDecayCycles = eloDecayStatus.decayCycles
-      
-      if (currentDecayCycles > dbDecayApplied) {
-        const diffCycles = currentDecayCycles - dbDecayApplied
-        const penalty = diffCycles * 15
-        const newElo = Math.max(0, userProfile.elo - penalty)
-        
-        try {
-          const { error } = await supabase
-            .from('profiles')
-            .update({
-              elo_rating: newElo,
-              decay_applied_cycles: currentDecayCycles
-            })
-            .eq('id', session.user.id)
-            
-          if (error) throw error
-          
-          toast.info(`📉 Pénalité d'inactivité appliquée : -15 Elo (identique pour tous). Jouez un match Classé pour stopper la dégradation !`)
-          
-          // Re-fetch profile to sync state
-          await fetchProfile(session.user.id)
-        } catch (err) {
-          console.warn("Erreur lors de la synchronisation Elo Decay:", err?.message || err)
+      try {
+        const { data, error } = await supabase
+          .rpc('apply_elo_decay', { p_user_id: session.user.id })
+
+        if (error) throw error
+
+        if (data?.decay_applied) {
+          toast.info(`📉 Pénalité d'inactivité appliquée : -${data.penalty_elo} Elo. Jouez un match Classé pour stopper la dégradation !`)
         }
-      } else if (currentDecayCycles < dbDecayApplied && dbDecayApplied > 0) {
-        // If the user played a match, reset decay_applied_cycles in DB
-        try {
-          const { error } = await supabase
-            .from('profiles')
-            .update({
-              decay_applied_cycles: 0
-            })
-            .eq('id', session.user.id)
-            
-          if (error) throw error
-          
-          // Re-fetch profile to sync state
-          await fetchProfile(session.user.id)
-        } catch (err) {
-          console.warn("Erreur lors du reset des cycles Elo Decay:", err?.message || err)
-        }
+
+        // Always re-fetch profile to stay in sync
+        await fetchProfile(session.user.id)
+      } catch (err) {
+        console.warn("Erreur lors de la synchronisation Elo Decay:", err?.message || err)
       }
     }
     
@@ -1264,12 +1236,16 @@ export default function App() {
 
     try {
       setLoading(true)
-      const { error } = await supabase
-        .from('matches')
-        .update({ status: 'Cancelled' })
-        .eq('id', matchId)
+      // Use RPC to verify participation before cancelling
+      const { data, error } = await supabase
+        .rpc('cancel_match', { p_match_id: matchId })
 
       if (error) throw error
+
+      if (data?.success === false) {
+        toast.error(data.error || "Vous ne pouvez pas annuler ce match.")
+        return
+      }
 
       toast.success("Le match a été annulé avec succès.")
       await fetchRecentMatches(userProfile.id)
@@ -1706,12 +1682,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>© 2026 elomatch. Tous droits réservés.</p>
           <p className="text-zinc-500 text-xs">
-            Un problème ? Une idée ? Contactez le support :{' '}
+            Un problème ? Une idée ?{' '}
             <a 
-              href="mailto:ludow3b@gmail.com" 
+              href="mailto:support@elomatch.app" 
               className="text-zinc-400 hover:text-neon-lime font-medium transition-colors cursor-pointer"
             >
-              ludow3b@gmail.com
+              support@elomatch.app
             </a>
           </p>
           <button 

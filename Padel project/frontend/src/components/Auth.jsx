@@ -1,8 +1,36 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase, isConfigured } from '../supabaseClient'
 import { Mail, Lock, User, MapPin, Building2, AlertCircle, ArrowRight, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import AuthAltSection from './AuthAltSection'
 import CGU from './CGU'
+
+// --- Login rate limiter ---
+const MAX_LOGIN_ATTEMPTS = 5
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000 // 15 min
+const RATE_LIMIT_KEY_ATTEMPTS = 'elomatch_login_attempts'
+const RATE_LIMIT_KEY_LOCKED = 'elomatch_login_locked_until'
+
+function checkLoginRateLimit() {
+  const lockedUntil = parseInt(localStorage.getItem(RATE_LIMIT_KEY_LOCKED) || '0')
+  if (Date.now() < lockedUntil) {
+    const remaining = Math.ceil((lockedUntil - Date.now()) / 60000)
+    return { locked: true, remaining }
+  }
+  return { locked: false, remaining: 0 }
+}
+
+function trackLoginFailure() {
+  const attempts = parseInt(localStorage.getItem(RATE_LIMIT_KEY_ATTEMPTS) || '0') + 1
+  localStorage.setItem(RATE_LIMIT_KEY_ATTEMPTS, String(attempts))
+  if (attempts >= MAX_LOGIN_ATTEMPTS) {
+    localStorage.setItem(RATE_LIMIT_KEY_LOCKED, String(Date.now() + LOCKOUT_DURATION_MS))
+  }
+}
+
+function resetLoginRateLimit() {
+  localStorage.removeItem(RATE_LIMIT_KEY_ATTEMPTS)
+  localStorage.removeItem(RATE_LIMIT_KEY_LOCKED)
+}
 
 export default function Auth({ onDemoLogin }) {
   const [isLogin, setIsLogin] = useState(true)
@@ -55,6 +83,14 @@ export default function Auth({ onDemoLogin }) {
     e.preventDefault()
     setError(null)
     setSuccess(null)
+
+    // Rate limiting check
+    const { locked, remaining } = checkLoginRateLimit()
+    if (locked) {
+      setError(`Trop de tentatives. Réessayez dans ${remaining} minute${remaining > 1 ? 's' : ''}.`)
+      return
+    }
+
     setLoading(true)
 
     if (!isConfigured) {
@@ -65,21 +101,13 @@ export default function Auth({ onDemoLogin }) {
 
     try {
       if (isLogin) {
-        // Sign In with retry on transient errors (500 auth intermittent)
-        const maxRetries = 2
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          })
-          if (!signInError) break // success
-          if (attempt < maxRetries && signInError.status >= 500) {
-            // Transient server error — wait 1s then retry
-            await new Promise(r => setTimeout(r, 1000))
-            continue
-          }
-          throw signInError
-        }
+        // Sign In with single attempt (rate limiter handles brute force protection)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+        if (signInError) throw signInError
+        resetLoginRateLimit()
       } else {
         // Sign Up
         if (!firstName || !lastName || !city) {
@@ -119,6 +147,10 @@ export default function Auth({ onDemoLogin }) {
         setIsLogin(true)
       }
     } catch (err) {
+      // Track failed login attempts for rate limiting
+      if (isLogin) {
+        trackLoginFailure()
+      }
       // Traduire les erreurs techniques en messages clairs utilisateur
       const msg = err.message || ''
       if (msg.includes('Database error querying schema') || msg.includes('unexpected_failure')) {

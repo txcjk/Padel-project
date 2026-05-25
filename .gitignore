@@ -36,6 +36,13 @@ Thumbs.db
 # Credentials & Secrets
 *credentials*
 *.git-credentials
+**/.env
+**/.env.local
+**/.env.*.local
+credentials/
+.secret*
+*.pem
+*.key
 
 # Playwright MCP
 .playwright-mcp/

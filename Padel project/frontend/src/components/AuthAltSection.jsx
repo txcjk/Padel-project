@@ -42,10 +42,10 @@ export default function AuthAltSection({ onGoogleLogin, onDemoLogin, loading }) 
       <p className="text-[10px] text-zinc-500 text-center leading-relaxed pt-2">
         Besoin d'aide avec votre compte ? Écrivez-nous à{' '}
         <a 
-          href="mailto:ludow3b@gmail.com" 
+          href="mailto:support@elomatch.app" 
           className="text-zinc-400 hover:text-neon-lime transition-colors font-medium cursor-pointer"
         >
-          ludow3b@gmail.com
+          support@elomatch.app
         </a>
       </p>
     </div>

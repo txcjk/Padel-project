@@ -17,10 +17,28 @@ export default function CreateMatch({
   
   const CLUBS = [
     '¡HOLA! PADEL',
-    '4Padels Bordeaux', 
-    'Big Padel Jet Sports', 
-    'Padel Touch Arcachon', 
-    'Padel Arena Rouen', 
+    '4PADEL Bordeaux',
+    'Big Padel',
+    'Padel Touch Bassin',
+    '3D Padel',
+    'Buenavista Padel Club',
+    'CA Béglais Padel',
+    'C\' Padel Club',
+    'Forever Padel',
+    'Ginga Stadium',
+    'MB Padel',
+    'MY PADEL',
+    'Padel House',
+    'Padel 33 - Bordeaux',
+    'Padel 33 - Bruges',
+    'Padel 33 - Gradignan',
+    'Padel 33 - Mérignac',
+    'Rocquevielle (Girondins)',
+    'TC du Pinsan',
+    'THE PADEL',
+    'UCPA Sport Station Bordeaux',
+    'Twins Padel Club',
+    'Padel Arena Rouen',
     'Casa Padel Paris'
   ]
 
@@ -114,11 +132,13 @@ export default function CreateMatch({
         )
         setSearchResults(filtered)
       } else {
+        // Escape LIKE wildcards to prevent injection
+        const safeQuery = query.replace(/%/g, '\\%').replace(/_/g, '\\_')
         // Live Supabase query
         const { data, error } = await supabase
           .from('profiles')
           .select('id, first_name, last_name, player_tag, elo_rating, avatar_url')
-          .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,player_tag.ilike.%${query}%`)
+          .or(`first_name.ilike.%${safeQuery}%,last_name.ilike.%${safeQuery}%,player_tag.ilike.%${safeQuery}%`)
           .limit(10)
 
         if (error) throw error

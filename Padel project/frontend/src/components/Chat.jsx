@@ -3,6 +3,8 @@ import { MessageSquare, Send, Users, ShieldAlert, Sparkles, User, Bell, Loader2 
 import { supabase } from '../supabaseClient'
 import { useToast } from './ToastProvider'
 
+const MESSAGE_COOLDOWN_MS = 1500 // 1.5s between messages
+
 export default function Chat({ 
   user, 
   isDemo, 
@@ -20,6 +22,7 @@ export default function Chat({
   const [messages, setMessages] = useState([])
   const [inputText, setInputText] = useState('')
   const [loading, setLoading] = useState(false)
+  const lastMessageTime = useRef(0)
 
   // Active Chats List
   const myMatches = recentMatches.filter(m => m.status === 'Pending' || m.status === 'Full' || m.status === 'Pending_Validation' || m.status === 'Completed')
@@ -133,8 +136,8 @@ export default function Chat({
 
       const { data, error } = await query.order('created_at', { ascending: true })
       if (error) {
-        // Handle missing relation / messages table gracefully
-        if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+        // Graceful fallback for missing table or other errors
+        if (error.status === 404 || error.code === 'PGRST116') {
           console.warn('Graceful fallback: Messages table missing. Loading simulation chat.')
           const channelMessages = demoMessages.filter(msg => {
             if (activeTab === 'matches') {
@@ -181,6 +184,14 @@ export default function Chat({
   const handleSendMessage = async (e) => {
     e.preventDefault()
     if (!inputText.trim() || !selectedChannel) return
+
+    // Rate limiting: prevent message spam
+    const now = Date.now()
+    if (now - lastMessageTime.current < MESSAGE_COOLDOWN_MS) {
+      toast.error('Veuillez attendre avant d\'envoyer un autre message.')
+      return
+    }
+    lastMessageTime.current = now
 
     const messageContent = inputText
     setInputText('')
@@ -258,7 +269,7 @@ export default function Chat({
             })
 
           if (error) {
-            if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+            if (error.status === 404 || error.code === 'PGRST116') {
               console.warn('Graceful fallback: Messages table missing. Sending message locally.')
               const userMsg = {
                 id: `msg-${Date.now()}`,
