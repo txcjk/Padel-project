@@ -7,20 +7,10 @@ const isConfigured =
   !!supabaseUrl &&
   !!supabaseAnonKey &&
   supabaseUrl.startsWith('https://') &&
-  !supabaseUrl.includes('your-supabase-project') &&
-  !supabaseAnonKey.includes('your-supabase-anon-key')
+  supabaseUrl !== 'https://your-supabase-project.supabase.co' &&
+  supabaseAnonKey !== 'your-supabase-anon-key'
 
-if (!isConfigured) {
-  console.warn(
-    '⚠️ elomatch : Supabase non configuré.\n' +
-    'Créez "frontend/.env" avec :\n' +
-    '  VITE_SUPABASE_URL=https://votre-projet.supabase.co\n' +
-    '  VITE_SUPABASE_ANON_KEY=votre-cle-anon\n' +
-    'Mode Démo activé en attendant.'
-  )
-}
-
-// Créer le client seulement si config valide, sinon proxy qui throw sur usage
+// Créer le client Supabase
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : new Proxy({}, {
